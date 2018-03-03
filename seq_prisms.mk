@@ -5,13 +5,12 @@
 # make: 
 #     http://www.gnu.org/software/make/manual/make.html
 #
-fastq_file_suffix=trimmed
 data_dir=
 out_dir=
-
-
-seq_files := $(wildcard $(data_dir)/*.$(fastq_file_suffix))
-
+hpc_type=
+sample_rate=
+seq_files=
+dry_run=yes
 
 
 %.logprecis: %.log
@@ -23,11 +22,8 @@ versions.log:
 ##############################################
 # how to make everything
 ##############################################
-$(out_dir)/seq_prisms.html:  $(out_dir)/fastqc/fastqc_prism.html
+$(out_dir)/seq_prisms.html:  $(out_dir)/fastqc/fastqc_prism.html  $(out_dir)/bwa/bwa_prism.html $(out_dir)/taxonomy/taxonomy_prism.html
 	echo "tba" > $(out_dir)/seq_prisms.html
-
-
-
 
 
 ##############################################
@@ -35,7 +31,24 @@ $(out_dir)/seq_prisms.html:  $(out_dir)/fastqc/fastqc_prism.html
 ##############################################
 $(out_dir)/fastqc/fastqc_prism.html:
 	mkdir -p $(out_dir)/fastqc
-	fastqc_prism.sh -o $(out_dir)/fastqc $(seq_files)
+	$(SEQ_PRISMS_BIN)/fastqc_prism.sh -C $(hpc_type) -O $(out_dir)/fastqc $(seq_files) > $(out_dir)/fastqc_prism.log 2>&1
+
+
+##############################################
+# how to make bwa 
+##############################################
+$(out_dir)/bwa/bwa_prism.html:
+	mkdir -p $(out_dir)/bwa
+	$(SEQ_PRISMS_BIN)/bwa_prism.sh -C $(hpc_type)  -O $(out_dir)/bwa -s $(samplerate) $(seq_files) > $(out_dir)/bwa_prism.log 2>&1
+
+##############################################
+# how to make taxonomy 
+##############################################
+$(out_dir)/taxonomy/taxonomy_prism.html:
+	mkdir -p $(out_dir)/taxonomy
+	$(SEQ_PRISMS_BIN)/taxonomy_prism.sh -C $(hpc_type)  -O $(out_dir)/taxonomy -s $(samplerate) $(seq_files) > $(out_dir)/taxonomy_prism.log 2>&1
+
+
 
 
 ##############################################

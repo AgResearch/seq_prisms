@@ -9,20 +9,22 @@ function get_opts() {
    FILES=""
    OUT_DIR=""
    DATA_DIR=""
+   SAMPLE_RATE=".0002"
    MAX_TASKS=50
+
 
    help_text="
 \n
-./seq_prisms.sh  [-h] [-n] [-d] -D datadir -O outdir [-C local|slurm ] input_file_names\n
+./bwa_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] -D datadir -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
-fastqc_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
+bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
 \n
 "
 
    # defaults:
-   while getopts ":nhO:C:D:m:" opt; do
+   while getopts ":nhO:C:D:s:m:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -42,6 +44,9 @@ fastqc_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_
          ;;
        C)
          HPC_TYPE=$OPTARG
+         ;;
+       s)
+         SAMPLE_RATE=$OPTARG
          ;;
        m)
          MAX_TASKS=$OPTARG
@@ -64,9 +69,8 @@ fastqc_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_
 
 
 function check_opts() {
-   mkdir -p $OUT_DIR
    if [ ! -d $OUT_DIR ]; then
-      echo "OUT_DIR $OUT_DIR not found/could not create"
+      echo "OUT_DIR $OUT_DIR not found"
       exit 1
    fi
    if [ ! -d $DATA_DIR ]; then
@@ -87,6 +91,7 @@ function echo_opts() {
   echo DEBUG=$DEBUG
   echo HPC_TYPE=$HPC_TYPE
   echo FILES=$FILES
+  echo SAMPLE_RATE=$SAMPLE_RATE
 }
 
 #
@@ -95,8 +100,10 @@ function echo_opts() {
 #
 function configure_env() {
    cd $SEQ_PRISMS_BIN
-   cp ./fastqc_prism.sh $OUT_DIR
-   cp ./fastqc_prism.mk $OUT_DIR
+   cp ./bwa_prism.sh $OUT_DIR
+   cp ./bwa_prism.mk $OUT_DIR
+   cp ./collate_mapping_stats.py $OUT_DIR
+   cp ./mapping_stats_plots.r $OUT_DIR
    echo "
 [tardish]
 [tardis_engine]
@@ -117,23 +124,29 @@ function get_targets() {
    TARGETS=""
    for file in $FILES; do
       base=`basename $file`
-      TARGETS="$TARGETS $OUT_DIR/${base}.fastqc_prism"
+      TARGETS="$TARGETS $OUT_DIR/${base}.bwa_prism"
    done 
 }
 
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f fastqc_prism.mk -d  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/fastqc_prism.log 2>&1
+   make -n -f bwa_prism.mk -d  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/bwa_prism.log 2>&1
+   echo "dry run : summary commands are 
+   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/collate_mapping_stats.py $OUT_DIR/*.stats > $OUT_DIR/stats_summary.txt
+   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla  $OUT_DIR/mapping_stats_plots.r datafolder=$OUT_DIR
+   "
    exit 0
 }
 
 function run_prism() {
-   make -f fastqc_prism.mk -d  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/fastqc_prism.log 2>&1
+   make -f bwa_prism.mk -d  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/bwa_prism.log 2>&1
+   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/collate_mapping_stats.py $OUT_DIR/*.stats > $OUT_DIR/stats_summary.txt
+   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla  $OUT_DIR/mapping_stats_plots.r datafolder=$OUT_DIR
 }
 
 function html_prism() {
-   echo "tba" > $OUT_DIR/fastqc_prism.html 2>&1
+   echo "tba" > $OUT_DIR/bwa_prism.html 2>&1
 }
 
 
@@ -151,7 +164,7 @@ function main() {
       if [ $? == 0 ] ; then
          html_prism
       else
-         echo "error state from fastqc run - skipping html page generation"
+         echo "error state from bwa run - skipping html page generation"
          exit 1
       fi
    fi

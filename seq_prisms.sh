@@ -6,20 +6,22 @@ function get_opts() {
    PWD0=$PWD
    DRY_RUN=no
    DEBUG=no
+   HPC_TYPE=slurm
+   FILES=""
+   OUT_DIR=""
+   DATA_DIR=""
+   SAMPLE_RATE=".002"
+   MAX_TASKS=50
 
    help_text="
 \n
-./seq_prisms.sh  [-n] -D datadir -O outdir [-C local|slurm ] [ -T taxonomy|kmer|bwa|fastqc ] -S [file name suffix e.g. trimmed or fastq.gz etc]\n
+./seq_prisms.sh [-h] [-n] [-d] -D datadir -O outdir [-C local|slurm ] [ -T taxonomy|kmer|bwa|fastqc ] files \n
 \n
 "
 
-   # defaults:
-   TARGET="all"
-   HPCTYPE="slurm"
-   FASTQ_FILE_SUFFIX=.fastq.gz
-   while getopts ":ndhR:D:E:b:t:m:M:T:C:F:S:s:" opt; do
+   while getopts ":ndhD:O:C:s:m:" opt; do
    case $opt in
-      n)
+       n)
          DRY_RUN=yes
          ;;
        d)
@@ -36,13 +38,13 @@ function get_opts() {
          DATA_DIR=$OPTARG
          ;;
        C)
-         HPCTYPE=$OPTARG
+         HPC_TYPE=$OPTARG
          ;;
-       T)
-         TARGET=$OPTARG
+       s)
+         SAMPLE_RATE=$OPTARG
          ;;
-       S)
-         FASTQ_FILE_SUFFIX=$OPTARG
+       m)
+         MAX_TASKS=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -54,27 +56,38 @@ function get_opts() {
          ;;
      esac
    done
+
+   shift $((OPTIND-1))
+
+   FILES=$@
 }
 
 
 
 function check_opts() {
-   if [ ! -d OUT_DIR ]; then
+   if [ ! -d $OUT_DIR ]; then
       echo "OUT_DIR $OUT_DIR not found ( you might need to supply the full path $PWD0/$OUT_DIR ? ) "
       exit 1
    fi
-   if [ ! -d DATA_DIR ]; then
+   if [ ! -d $DATA_DIR ]; then
       echo "DATA_DIR $DATA_DIR not found ( you might need to supply the full path $PWD0/$DATA_DIR ? ) "
       exit 1
    fi
-   if [[ $TARGET != "all" && $TARGET != "fastqc" && $TARGET != "bwa" && $TARGET != "taxonomy" && $TARGET != "kmer" ]]; then
-      echo "target must be one of all, fastqc, bwa, taxonomy, kmer"
+   if [[ $HPC_TYPE != "local" && $HPC_TYPE != "slurm" ]]; then
+      echo "HPC_TYPE must be one of local, slurm"
       exit 1
    fi
-   if [[ $HPCTYPE != "local" && $HPCTYPE != "slurm" ]]; then
-      echo "HPCTYPE must be one of local, slurm"
+
+   if [ -z $FILES ] ; then
+      echo "must specify at least one file to analyse"
       exit 1
    fi
+
+   for file in $FILES; do
+      if [ ! -f $file ]; then
+         echo "at least one file ( $file ) not found - giving up"
+      fi
+   done
 }
 
 function echo_opts() {
@@ -82,7 +95,7 @@ function echo_opts() {
   echo OUT_DIR=$OUT_DIR
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
-  echo HPCTYPE=$HPCTYPE
+  echo HPC_TYPE=$HPC_TYPE
 }
 
 #
@@ -93,6 +106,11 @@ function configure_env() {
    cd $SEQ_PRISMS_BIN
    cp seq_prisms.sh $OUT_DIR
    cp seq_prisms.mk $OUT_DIR
+   echo "
+[tardish]
+[tardis_engine]
+max_tasks=$MAX_TASKS
+" > $OUT_DIR/.tardishrc
    cd $OUT_DIR
 }
 
@@ -107,7 +125,7 @@ function check_env() {
 
 function fake_prisms() {
    echo "dry run ! "
-   make -n -f seq_prisms.mk -d  --no-builtin-rules -j 16 fastq_file_suffix=$FASTQ_FILE_SUFFIX data_dir=$DATA_DIR out_dir=$OUT_DIR $OUT_DIR/seq_prisms.log > $OUT_DIR/fake_prisms.log 2>&1
+   make -n -f seq_prisms.mk -d  --no-builtin-rules -j 16 dry_run=$DRY_RUN hpc_type=$HPC_TYPE seq_files="$FILES" data_dir=$DATA_DIR out_dir=$OUT_DIR SAMPLE_RATE=$SAMPLE_RATE $OUT_DIR/seq_prisms.html > $OUT_DIR/fake_prisms.log 2>&1
    exit 0
    # make a precis of the log file
    # cat build${METHOD}.logprecis 
@@ -115,7 +133,7 @@ function fake_prisms() {
 
 function run_prisms() {
    # make a precis of the log file
-   # cat build${METHOD}.logprecis 
+   make -f seq_prisms.mk -d  --no-builtin-rules -j 16 dry_run=$DRY_RUN hpc_type=$HPC_TYPE seq_files="$FILES" data_dir=$DATA_DIR out_dir=$OUT_DIR SAMPLE_RATE=$SAMPLE_RATE $OUT_DIR/seq_prisms.html > $OUT_DIR/seq_prisms.log 2>&1
 }
 
 
@@ -125,9 +143,13 @@ function main() {
    echo_opts
    check_env
    configure_env
-   if [ $DRY_RUN != "n" ]; then
+   if [ $DRY_RUN != "no" ]; then
       fake_prisms
    else
       run_prisms
    fi
 }
+
+set -x
+main $@
+set +x
