@@ -114,7 +114,8 @@ draw_most_variable_heatmap <- function(args, taxa_count) {
        #keysize=1.0, margin=c(17,25), cexRow=1.5, cexCol=1.6, 
        keysize=1.0, margin=c(37,48), cexRow=2.0, cexCol=2.5, 
        lmat=rbind(  c(4,3,0 ), c(2, 1, 0) ), lwid=c(.1, .6, 0 ), lhei=c(.25, 3),labCol=colLabels, labRow=rowLabels)
-   title(args$analysis_name, cex.main=3)
+
+   title(paste(args$analysis_name, " (", taxa_count, " most variable taxa across samples)", sep=""), cex.main=3)
 
    clust = as.hclust(hm$colDendrogram) 
    write.table(cutree(clust, 1:dim(sdatamatrix)[2]),file=paste(args$output_base, "_variable.heatmap_clusters.txt",sep=""),row.names=TRUE,sep="\t")  # ref https://stackoverflow.com/questions/18354501/how-to-get-member-of-clusters-from-rs-hclust-heatmap-2
@@ -236,6 +237,10 @@ draw_profiles_heatmap <- function(args, num_clust) {
        #lmat=rbind(  c(4,3,0 ), c(2, 1, 0) ), lwid=c(.2, .6, 0 ), lhei=c(.25, 3),labCol=colLabels)
        lmat=rbind(  c(4,3,0), c(2,1,0)), lwid=c(.1, 1.2, 0), lhei=c(.25, 3 ),labCol=colLabels)
 
+
+   title(paste(args$analysis_name, " taxa profiles, cluster size ", num_clust, " (clusters - i.e. rows - labelled by central taxa)", sep=""), cex.main=3)
+
+
    # the column labels on the plots are usually too crowded so supply a file with the 
    # column names ordered as per the plot
    write.table(colnames(as.matrix(clustered_data))[hm$colInd[1:length(hm$colInd)]] , file=paste(args$output_base, "_samplenames_ordered.dat",sep=""),row.names=TRUE,sep="\t")
@@ -245,15 +250,15 @@ draw_profiles_heatmap <- function(args, num_clust) {
 
    if ( ! is.na( clustering ) ) {
       # supply the tax clusters
-      write.table(clustering$cluster, file=paste(args$output_base, "_tax_clusters.dat",sep=""),row.names=TRUE,sep="\t")
+      write.table(clustering$cluster, file=paste(args$output_base, "_profiles_tax_clusters.dat",sep=""),row.names=TRUE,sep="\t")
       # supply the names given to the tax clusters
-      write.table(rownames, file=paste(args$output_base, "_tax_cluster_names.dat",sep=""),row.names=TRUE,sep="\t")
+      write.table(rownames, file=paste(args$output_base, "_profiles_tax_cluster_names.dat",sep=""),row.names=TRUE,sep="\t")
    }
 
 
    # 
    clust = as.hclust(hm$colDendrogram)
-   sink(paste(args$output_base, "_heatmap_clustering_support.txt",sep=""))
+   sink(paste(args$output_base, "_heatmap_profiles_clustering_support.txt",sep=""))
    print("clust$merge:")
    print(clust$merge)
    print("clust$height:")
@@ -263,7 +268,7 @@ draw_profiles_heatmap <- function(args, num_clust) {
    print("clust$labels")
    print(clust$labels)
    sink()
-   write.table(cutree(clust, 1:dim(clustered_data)[2]),file=paste(args$output_base, "_profiles_clusters.txt",sep=""),row.names=TRUE,sep="\t")  # ref https://stackoverflow.com/questions/18354501/how-to-get-member-of-clusters-from-rs-hclust-heatmap-2
+   write.table(cutree(clust, 1:dim(clustered_data)[2]),file=paste(args$output_base, "_profiles.heatmap_clusters.txt",sep=""),row.names=TRUE,sep="\t")  # ref https://stackoverflow.com/questions/18354501/how-to-get-member-of-clusters-from-rs-hclust-heatmap-2
 
 
    dev.off()
