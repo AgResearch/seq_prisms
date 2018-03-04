@@ -39,14 +39,14 @@ $(out_dir)/fastqc/fastqc_prism.html:
 ##############################################
 $(out_dir)/bwa/bwa_prism.html:
 	mkdir -p $(out_dir)/bwa
-	$(SEQ_PRISMS_BIN)/bwa_prism.sh -C $(hpc_type)  -O $(out_dir)/bwa -s $(samplerate) $(seq_files) > $(out_dir)/bwa_prism.log 2>&1
+	$(SEQ_PRISMS_BIN)/bwa_prism.sh -C $(hpc_type)  -O $(out_dir)/bwa -s $(sample_rate) $(seq_files) > $(out_dir)/bwa_prism.log 2>&1
 
 ##############################################
 # how to make taxonomy 
 ##############################################
 $(out_dir)/taxonomy/taxonomy_prism.html:
 	mkdir -p $(out_dir)/taxonomy
-	$(SEQ_PRISMS_BIN)/taxonomy_prism.sh -C $(hpc_type)  -O $(out_dir)/taxonomy -s $(samplerate) $(seq_files) > $(out_dir)/taxonomy_prism.log 2>&1
+	$(SEQ_PRISMS_BIN)/taxonomy_prism.sh -C $(hpc_type)  -O $(out_dir)/taxonomy -s $(sample_rate) $(seq_files) > $(out_dir)/taxonomy_prism.log 2>&1
 
 
 

@@ -10,12 +10,12 @@ function get_opts() {
    FILES=""
    OUT_DIR=""
    DATA_DIR=""
-   SAMPLE_RATE=".002"
+   SAMPLE_RATE=.002
    MAX_TASKS=50
 
    help_text="
 \n
-./seq_prisms.sh [-h] [-n] [-d] -D datadir -O outdir [-C local|slurm ] [ -T taxonomy|kmer|bwa|fastqc ] files \n
+./seq_prisms.sh [-h] [-n] [-d] -D datadir -O outdir [-C local|slurm ] files \n
 \n
 "
 
@@ -96,6 +96,7 @@ function echo_opts() {
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
   echo HPC_TYPE=$HPC_TYPE
+  echo SAMPLE_RATE=$SAMPLE_RATE
 }
 
 #
@@ -125,7 +126,7 @@ function check_env() {
 
 function fake_prisms() {
    echo "dry run ! "
-   make -n -f seq_prisms.mk -d  --no-builtin-rules -j 16 dry_run=$DRY_RUN hpc_type=$HPC_TYPE seq_files="$FILES" data_dir=$DATA_DIR out_dir=$OUT_DIR SAMPLE_RATE=$SAMPLE_RATE $OUT_DIR/seq_prisms.html > $OUT_DIR/fake_prisms.log 2>&1
+   make -n -f seq_prisms.mk -d -k  --no-builtin-rules -j 16 dry_run=$DRY_RUN hpc_type=$HPC_TYPE seq_files="$FILES" data_dir=$DATA_DIR out_dir=$OUT_DIR sample_rate=$SAMPLE_RATE $OUT_DIR/seq_prisms.html > $OUT_DIR/fake_prisms.log 2>&1
    exit 0
    # make a precis of the log file
    # cat build${METHOD}.logprecis 
@@ -133,7 +134,7 @@ function fake_prisms() {
 
 function run_prisms() {
    # make a precis of the log file
-   make -f seq_prisms.mk -d  --no-builtin-rules -j 16 dry_run=$DRY_RUN hpc_type=$HPC_TYPE seq_files="$FILES" data_dir=$DATA_DIR out_dir=$OUT_DIR SAMPLE_RATE=$SAMPLE_RATE $OUT_DIR/seq_prisms.html > $OUT_DIR/seq_prisms.log 2>&1
+   make -f seq_prisms.mk -d -k --no-builtin-rules -j 16 dry_run=$DRY_RUN hpc_type=$HPC_TYPE seq_files="$FILES" data_dir=$DATA_DIR out_dir=$OUT_DIR sample_rate=$SAMPLE_RATE $OUT_DIR/seq_prisms.html > $OUT_DIR/seq_prisms.log 2>&1
 }
 
 

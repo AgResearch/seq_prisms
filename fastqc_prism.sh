@@ -124,12 +124,12 @@ function get_targets() {
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f fastqc_prism.mk -d  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/fastqc_prism.log 2>&1
+   make -n -f fastqc_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/fastqc_prism.log 2>&1
    exit 0
 }
 
 function run_prism() {
-   make -f fastqc_prism.mk -d  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/fastqc_prism.log 2>&1
+   make -f fastqc_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/fastqc_prism.log 2>&1
 }
 
 function html_prism() {
