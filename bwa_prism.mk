@@ -21,6 +21,7 @@ ref_genome=/dataset/MBIE_genomics4production/active/rachael_ryegrass_GBS/LP_GBS_
 %.bwa_prism:
 	tardis.py -hpctype $(hpc_type) -d $(out_dir) -s $(sample_rate) bwa aln $(alignment_parameters) $(ref_genome) _condition_fastq_input_$(data_dir)/$(notdir $*) \> _condition_throughput_$(out_dir)/$(notdir $*)_vs_$(notdir $(ref_genome)).sai \; bwa samse $(ref_genome) _condition_throughput_$(out_dir)/$(notdir $*)_vs_$(notdir $(ref_genome)).sai _condition_fastq_input_$(data_dir)/$(notdir $*)  \> _condition_sam_output_$(out_dir)/$(notdir $*)_vs_$(notdir $(ref_genome)).bam  
 	tardis.py -q -hpctype $(hpc_type) -d $(out_dir) samtools flagstat $(out_dir)/$(notdir $*)_vs_$(notdir $(ref_genome)).bam > $(out_dir)/$(notdir $*)_vs_$(notdir $(ref_genome)).stats
+	date > $@
 	
 
 ##############################################

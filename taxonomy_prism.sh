@@ -148,7 +148,7 @@ function run_prism() {
    # R instance in the bifo-essential conda env. As a work-around until this is sorted , locate the run1.sh wrapper script and run the plot build manally 
    # on (e.g. ) intrepid, using /dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript  
 
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR  Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\'Taxonomy Summary \(100 most variable taxa\)\' summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr
+   echo "need to run : tardis.py -hpctype $HPC_TYPE -d $OUT_DIR  Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\'Taxonomy Summary \(100 most variable taxa\)\' summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr"
 }
 
 function html_prism() {

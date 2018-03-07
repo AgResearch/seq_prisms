@@ -19,6 +19,7 @@ blast_parameters=-num_threads 2 -db nt -evalue 1.0e-10 -dust \'20 64 1\' -max_ta
 %.taxonomy_prism:
 	tardis.py -hpctype $(hpc_type) -d $(out_dir) -s $(sample_rate) blastn -query _condition_fastq2fasta_input_$(data_dir)/$(notdir $*) -task blastn $(blast_parameters) -out _condition_text_output_$(out_dir)/$(notdir $*).blastresults 1\>_condition_text_output_$(out_dir)/$(notdir $*).stdout 2\>_condition_text_output_$(out_dir)/$(notdir $*).stderr
 	tardis.py -hpctype $(hpc_type) -d $(out_dir) $(out_dir)/taxonomy_prism.py $(out_dir)/$(notdir $*).blastresults.gz
+	date > $@
 	
 
 

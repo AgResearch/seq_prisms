@@ -16,6 +16,7 @@ hpc_type=slurm
 %.fastqc_prism:
 	#fastqc $(data_dir)/$(notdir $*) -o $(out_dir) 1>$@ 2>$@
 	tardis.py -hpctype $(hpc_type) fastqc $(data_dir)/$(notdir $*) -o $(out_dir) \1>$@ \2>$@
+	date > $@
 	
 
 
