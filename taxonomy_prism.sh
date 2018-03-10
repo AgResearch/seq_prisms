@@ -6,10 +6,10 @@ function get_opts() {
    DRY_RUN=no
    DEBUG=no
    HPC_TYPE=slurm
-   FILES=""
-   OUT_DIR=""
-   DATA_DIR=""
-   SAMPLE_RATE=".0002"
+   FILES=
+   OUT_DIR=
+   DATA_DIR=
+   SAMPLE_RATE=
    MAX_TASKS=50
 
 
