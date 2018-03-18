@@ -25,7 +25,7 @@ kmer_parameters=-t frequency -k 6 -p 4
 # complete spectra.
 ##############################################
 %.kmer_prism:
-	tardis.py -hpctype $(hpc_type) -d $(out_dir) kmer_entropy.py $(sample_args) $(kmer_parameters) -o $(out_dir)/$(notdir $*).frequency.txt -b $(out_dir) $(data_dir)/$(notdir $*)
+	tardis.py -hpctype $(hpc_type) -d $(out_dir) -shell-include-file configure_env.sh kmer_prism.py $(sample_args) $(kmer_parameters) -o $(out_dir)/$(notdir $*).frequency.txt -b $(out_dir) $(data_dir)/$(notdir $*)
 	date > $@
 	
 ##############################################
