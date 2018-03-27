@@ -1,5 +1,7 @@
 #!/bin/bash
 
+declare -a files_array
+
 function get_opts() {
 
    PWD0=$PWD
@@ -9,14 +11,15 @@ function get_opts() {
    FILES=""
    OUT_DIR=""
    DATA_DIR=""
-   SAMPLE_RATE=".0002"
+   SAMPLE_RATE=""
    MAX_TASKS=1
    MINIMUM_SAMPLE_SIZE=0
+   SAMPLER=fastq
 
 
    help_text="
 \n
-./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] -D datadir -O outdir [-C local|slurm ] input_file_names\n
+./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-M minimum sample size] -a sampler -D datadir -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
@@ -25,7 +28,7 @@ sample_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_
 "
 
    # defaults:
-   while getopts ":nhO:C:D:s:m:M:" opt; do
+   while getopts ":nhO:C:D:s:m:M:a:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -49,6 +52,9 @@ sample_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_
        s)
          SAMPLE_RATE=$OPTARG
          ;;
+       a)
+         SAMPLER=$OPTARG
+         ;;
        m)
          MAX_TASKS=$OPTARG
          ;;
@@ -68,7 +74,16 @@ sample_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_
 
    shift $((OPTIND-1))
 
-   FILES=$@
+   FILE_STRING=$@
+
+   # this is needed because of the way we process args a "$@" - which 
+   # is needed in order to parse parameter sets to be passed to the 
+   # aligner (which are space-separated)
+   declare -a files="(${FILE_STRING})";
+   NUM_FILES=${#files[*]}
+   for ((i=0;$i<$NUM_FILES;i=$i+1)) do
+      files_array[$i]=${files[$i]}     
+   done
 }
 
 
@@ -77,6 +92,7 @@ function check_opts() {
       echo "OUT_DIR $OUT_DIR not found"
       exit 1
    fi
+
    if [ ! -d $DATA_DIR ]; then
       echo "DATA_DIR $DATA_DIR not found"
       exit 1
@@ -86,6 +102,12 @@ function check_opts() {
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
    fi
+
+   if [[ $SAMPLER != "fasta" && $SAMPLER != "fastq" && $SAMPLER != "paired_fastq" ]]; then
+      echo "SAMPLER must be fasta or fastq"
+      exit 1
+   fi
+
 }
 
 function echo_opts() {
@@ -94,8 +116,9 @@ function echo_opts() {
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
   echo HPC_TYPE=$HPC_TYPE
-  echo FILES=$FILES
+  echo FILES=${files_array[*]}
   echo SAMPLE_RATE=$SAMPLE_RATE
+  echo SAMPLER=$SAMPLER
   echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
 
 }
@@ -128,23 +151,78 @@ function check_env() {
 }
 
 function get_targets() {
-   TARGETS=""
-   for file in $FILES; do
-      base=`basename $file`
-      TARGETS="$TARGETS $OUT_DIR/${base}.sample_prism"
+   # make a target moniker for each input file and write associated 
+   # sampler wrapper, which will be called by make 
+
+   rm -f $OUT_DIR/sampling_targets.txt
+
+   sample_phrase=""
+   if [ ! -z $SAMPLE_RATE ]; then
+      sample_phrase="-s $SAMPLE_RATE"
+   fi 
+
+  
+   file1=""
+   file2=""
+   for ((j=0;$j<$NUM_FILES;j=$j+1)) do
+      file=${files_array[$j]}
+      file_base=`basename $file`
+      parameters_moniker=`echo $sample_phrase | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
+      sampler_moniker=${file_base}.${SAMPLER}.${parameters_moniker}
+      echo $OUT_DIR/${sampler_moniker}.sample_prism >> $OUT_DIR/sampling_targets.txt
+
+      # generate wrapper
+      sampler_filename=$OUT_DIR/${sampler_moniker}.sh
+
+      if [ -f sampler_filename ]; then
+         if [ ! $FORCE == yes ]; then
+            echo "found existing sampler $sampler_filename - will re-use (use -f to force rebuild of samplers) "
+            continue
+         fi
+      fi
+
+      if [ $SAMPLER == fasta ]; then
+         echo "#!/bin/bash
+source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
+        " > $sampler_filename
+      elif [ $SAMPLER == fastq ]; then
+         echo "#!/bin/bash
+source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fastq
+         " > $sampler_filename
+      elif [ $SAMPLER == paired_fastq ]; then
+        if [ -z $file2 ]; then 
+           file2=$file
+           continue
+        elif [ -z $file1 ]; then
+           file1=$file2
+           file2=$file
+         echo "#!/bin/bash
+source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fasta \; cat _condition_pairedfastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fasta 
+         " > $sampler_filename
+           file1=""
+           file2=""
+        fi
+      else 
+         echo "unsupported sampler $SAMPLER "
+         exit 1
+      fi
+      chmod +x $sampler_filename
    done 
 }
 
 
 function fake_prism() {
    echo "dry run ! 
-   make -n -f sample_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/sample_prism.log 2>&1
+   make -n -f sample_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/sampling_targets.txt` > $OUT_DIR/sample_prism.log 2>&1
    "
    exit 0
 }
 
 function run_prism() {
-   make -f sample_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/sample_prism.log 2>&1
+   make -f sample_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/sampling_targets.txt` > $OUT_DIR/sample_prism.log 2>&1
 }
 
 function html_prism() {
@@ -153,7 +231,7 @@ function html_prism() {
 
 
 function main() {
-   get_opts $@
+   get_opts "$@"
    check_opts
    echo_opts
    check_env
@@ -174,5 +252,5 @@ function main() {
 
 
 set -x
-main $@
+main "$@"
 set +x

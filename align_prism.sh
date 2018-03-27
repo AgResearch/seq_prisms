@@ -3,6 +3,7 @@
 
 declare -a references_array
 declare -a parameters_array
+declare -a files_array
 
 function get_opts() {
 
@@ -81,7 +82,43 @@ bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1
 
    shift $((OPTIND-1))
 
-   FILES=$@
+   FILE_STRING=$@
+
+   # this is needed because of the way we process args a "$@" - which 
+   # is needed in order to parse parameter sets to be passed to the 
+   # aligner (which are space-separated)
+   declare -a files="(${FILE_STRING})";
+   NUM_FILES=${#files[*]}
+   for ((i=0;$i<$NUM_FILES;i=$i+1)) do
+      files_array[$i]=${files[$i]}     
+   done
+}
+
+
+function test_if_fofn() {
+   # test whether the arg is a fofn, by checking if each record in it is the 
+   # name of a file 
+   is_fofn=1
+   if [ ! -f $1 ]; then
+      is_fofn=0
+   else
+      IFS=$'\n'
+      # if the first and last 50 records are filenames, assume fofn
+      for record in `awk '/\S+/{print}' $1 | head -50`; do  
+         if [ ! -f $record ]; then 
+            is_fofn=0
+            break
+         fi
+      done
+      for record in `awk '/\S+/{print}' $1 | tail -50`; do  
+         if [ ! -f $record ]; then 
+            is_fofn=0
+            break
+         fi
+      done
+
+      unset IFN
+   fi
 }
 
 
@@ -104,52 +141,60 @@ function check_opts() {
    fi
 
 
-   ##### note this needs re-working so can specify e.g. ref on command line, but a file of parameters ,
-   # and we apply multiple parameters sets
-   if [ ! -f $REFERENCES ]; then
-      # assume just one reference, specified on command line
-      references_array[1]=$REFERENCES
+   test_if_fofn $REFERENCES
 
+   if [ $is_fofn != 1  ]; then
+      # assume just one reference, specified on command line
+      references_array[0]=$REFERENCES
+
+      test_if_fofn $PARAMETERS
 
       if [ -z "$PARAMETERS"  ]; then
          echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
-      else
-         parameters_array[1]=$PARAMETERS      
-      fi
-      NUM_REFERENCES=1
-      NUM_PARAMETERS=1
+      elif [ $is_fofn != 1  ]; then
+         parameters_array[0]=$PARAMETERS      
+      else   # we have a filename listing a number n of alt parameters ( - so will duplicate reference n times )
+         index=0
+         for record in `awk '/\S+/{print}' $PARAMETERS`; do
+            parameters_array[$index]=$record
+            let index=$index+1
+         done
+         NUM_REFERENCES=${#parameters_array[*]}
 
-   else  # we have more than one reference to set up (or one ref, but different parameter sets)
-      if [ ! -f $PARAMETERS ]; then
-         if [ -z $PARAMETERS ]; then
-            echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
-         fi
+         for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
+            references_array[$i]=$REFERENCES      
+         done
       fi
-      index=1
+   else  # we have more than one reference to set up 
+      index=0
       IFS=$'\n'
       for record in `awk '/\S+/{print}' $REFERENCES`; do
          references_array[$index]=$record
          let index=$index+1
       done
       NUM_REFERENCES=${#references_array[*]}
-      index=1
-      if [ -f $PARAMETERS ]; then
+
+      test_if_fofn $PARAMETERS
+
+      if [ -z "$PARAMETERS"  ]; then
+         echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
+      fi
+
+      if [ $is_fofn != 1  ]; then
+         for ((i=1;$i<$NUM_REFERENCES;i=$i+1)) do
+            parameters_array[$i]=$PARAMETERS      
+         done
+      else
+         index=0
          for record in `awk '/\S+/{print}' $PARAMETERS`; do
             parameters_array[$index]=$record
             let index=$index+1
          done
-      else
-         for ((i=1;$i<=$NUM_REFERENCES;i=$i+1)) do
-            parameters_array[$i]=$PARAMETERS      
-         done
       fi
-
       unset IFS 
 
-      NUM_PARAMETERS=${#parameters_array[*]}
-
-      if [ $NUM_REFERENCES != $NUM_PARAMETERS ]; then
-         echo "error,  have $NUM_REFERENCES references but $NUM_PARAMETERS parameters"
+      if [ ${#parameters_array[*]} != $NUM_REFERENCES ]; then
+         echo "error - have $NUM_REFERENCES but ${#parameters_array[*]} parameter sets - must have same number of each !"
          exit 1
       fi
    fi
@@ -160,15 +205,15 @@ function echo_opts() {
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
   echo HPC_TYPE=$HPC_TYPE
-  echo FILES=$FILES
+  echo FILES=${files_array[*]}
   echo SAMPLE_RATE=$SAMPLE_RATE
   echo ALIGNER=$ALIGNER
   echo REFEREENCES
-  for ((i=1;$i<=$NUM_REFERENCES;i=$i+1)) do
+  for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
      echo ${references_array[$i]}
   done
   echo PARAMETERS
-  for ((i=1;$i<=$NUM_PARAMETERS;i=$i+1)) do
+  for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
      echo ${parameters_array[$i]}
   done
 }
@@ -209,14 +254,17 @@ function check_env() {
 function get_targets() {
    # make a target moniker for each combination of input file and reference, and write associated 
    # alignment wrapper, which will be called by make 
+
+   rm -f $OUT_DIR/alignment_targets.txt
    
-   for ((i=1;$i<=$NUM_REFERENCES;i=$i+1)) do
-      for file in $FILES; do
+   for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
+      for ((j=0;$j<$NUM_FILES;j=$j+1)) do
+         file=${files_array[$j]}
          file_base=`basename $file`
 	 ref_base=`basename ${references_array[$i]}`
-         parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g'`
+         parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
          alignment_moniker=${file_base}.${ALIGNER}.${ref_base}.${parameters_moniker}
-         TARGETS="$TARGETS $OUT_DIR/${alignment_moniker}.align_prism"
+         echo $OUT_DIR/${alignment_moniker}.align_prism >> $OUT_DIR/alignment_targets.txt
 
          # generate wrapper
          sample_phrase=""
@@ -239,7 +287,7 @@ function get_targets() {
          if [ $ALIGNER == bwa ]; then
             echo "#!/bin/bash
 source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase bwa aln $parameters _condition_fastq_input_$file \> _condition_throughput_$OUT_DIR/${alignment_moniker}.sai \; bwa samse $reference _condition_throughput_$OUT_DIR/${alignment_moniker}.sai _condition_fastq_input_$file  \> _condition_sam_output_$OUT_DIR/${alignment_moniker}.bam  
+tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase bwa aln $parameters $reference _condition_fastq_input_$file \> _condition_throughput_$OUT_DIR/${alignment_moniker}.sai \; bwa samse $reference _condition_throughput_$OUT_DIR/${alignment_moniker}.sai _condition_fastq_input_$file  \> _condition_sam_output_$OUT_DIR/${alignment_moniker}.bam  
 tardis -hpctype $HPC_TYPE -q -d $OUT_DIR samtools $OUT_DIR/${alignment_moniker}.bam   > $OUT_DIR/${alignment_moniker}.stats 
             " > $aligner_filename
          elif [ $ALIGNER == blastn ]; then
@@ -264,7 +312,7 @@ tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -qu
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f align_prism.mk -d -k  --no-builtin-rules -j 16 $TARGETS > $OUT_DIR/align_prism.log 2>&1
+   make -n -f align_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/alignment_targets.txt` > $OUT_DIR/align_prism.log 2>&1
    echo "dry run : summary commands are 
    TBA - probably another make
    "
@@ -272,7 +320,7 @@ function fake_prism() {
 }
 
 function run_prism() {
-   make -f align_prism.mk -d -k  --no-builtin-rules -j 16 $TARGETS > $OUT_DIR/align_prism.log 2>&1
+   make -f align_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/alignment_targets.txt` > $OUT_DIR/align_prism.log 2>&1
    # will call another make to do summaries
 }
 
@@ -282,7 +330,7 @@ function html_prism() {
 
 
 function main() {
-   get_opts $@
+   get_opts "$@"
    check_opts
    echo_opts
    check_env
@@ -303,5 +351,5 @@ function main() {
 
 
 set -x
-main $@
+main "$@"
 set +x
