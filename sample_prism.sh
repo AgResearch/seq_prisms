@@ -10,7 +10,6 @@ function get_opts() {
    HPC_TYPE=slurm
    FILES=""
    OUT_DIR=""
-   DATA_DIR=""
    SAMPLE_RATE=""
    MAX_TASKS=1
    MINIMUM_SAMPLE_SIZE=0
@@ -19,7 +18,7 @@ function get_opts() {
 
    help_text="
 \n
-./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-M minimum sample size] -a sampler -D datadir -O outdir [-C local|slurm ] input_file_names\n
+./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-M minimum sample size] -a sampler -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
@@ -42,9 +41,6 @@ sample_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_
          ;;
        O)
          OUT_DIR=$OPTARG
-         ;;
-       D)
-         DATA_DIR=$OPTARG
          ;;
        C)
          HPC_TYPE=$OPTARG
@@ -93,11 +89,6 @@ function check_opts() {
       exit 1
    fi
 
-   if [ ! -d $DATA_DIR ]; then
-      echo "DATA_DIR $DATA_DIR not found"
-      exit 1
-   fi
-
    if [[ $HPC_TYPE != "local" && $HPC_TYPE != "slurm" ]]; then
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
@@ -111,7 +102,6 @@ function check_opts() {
 }
 
 function echo_opts() {
-  echo DATA_DIR=$DATA_DIR
   echo OUT_DIR=$OUT_DIR
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
