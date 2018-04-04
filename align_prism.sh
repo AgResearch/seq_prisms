@@ -33,7 +33,7 @@ bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1
 "
 
    # defaults:
-   while getopts ":nhO:C:s:m:a:r:p:" opt; do
+   while getopts ":nhfO:C:s:m:a:r:p:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -99,7 +99,9 @@ function test_if_fofn() {
    # test whether the arg is a fofn, by checking if each record in it is the 
    # name of a file 
    is_fofn=1
-   if [ ! -f $1 ]; then
+   if [ -z "$1" ]; then
+      is_fofn=0
+   elif [ ! -f $1 ]; then
       is_fofn=0
    else
       IFS=$'\n'
@@ -146,22 +148,27 @@ function check_opts() {
    if [ $is_fofn != 1  ]; then
       # assume just one reference, specified on command line
       references_array[0]=$REFERENCES
+      NUM_REFERENCES=1
 
       test_if_fofn $PARAMETERS
 
       if [ -z "$PARAMETERS"  ]; then
          echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
+         parameters_array[0]=$PARAMETERS
+         NUM_PARAMETERS=1
       elif [ $is_fofn != 1  ]; then
          parameters_array[0]=$PARAMETERS      
+         NUM_PARAMETERS=1
       else   # we have a filename listing a number n of alt parameters ( - so will duplicate reference n times )
          index=0
          for record in `awk '/\S+/{print}' $PARAMETERS`; do
             parameters_array[$index]=$record
             let index=$index+1
          done
-         NUM_REFERENCES=${#parameters_array[*]}
+         NUM_PARAMETERS=${#parameters_array[*]}
 
-         for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
+         echo "cloning $NUM_PARAMETERS references"
+         for ((i=0;$i<$NUM_PARAMETERS;i=$i+1)) do
             references_array[$i]=$REFERENCES      
          done
       fi
@@ -178,23 +185,27 @@ function check_opts() {
 
       if [ -z "$PARAMETERS"  ]; then
          echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
+         NUM_PARAMETERS=1
       fi
 
       if [ $is_fofn != 1  ]; then
-         for ((i=1;$i<$NUM_REFERENCES;i=$i+1)) do
+         echo "cloning $NUM_REFERENCES parameter sets"
+         for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
             parameters_array[$i]=$PARAMETERS      
          done
+         NUM_PARAMETERS=1
       else
          index=0
          for record in `awk '/\S+/{print}' $PARAMETERS`; do
             parameters_array[$index]=$record
             let index=$index+1
          done
+         NUM_PARAMETERS=${#parameters_array[*]}
       fi
       unset IFS 
 
-      if [ ${#parameters_array[*]} != $NUM_REFERENCES ]; then
-         echo "error - have $NUM_REFERENCES but ${#parameters_array[*]} parameter sets - must have same number of each !"
+      if [ ${#parameters_array[*]} != ${#references_array[*]} ]; then
+         echo "error - have  ${#references_array[*]} references but ${#parameters_array[*]} parameter sets - must have same number of each !"
          exit 1
       fi
    fi
@@ -213,7 +224,7 @@ function echo_opts() {
      echo ${references_array[$i]}
   done
   echo PARAMETERS
-  for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
+  for ((i=0;$i<$NUM_PARAMETERS;i=$i+1)) do
      echo ${parameters_array[$i]}
   done
 }
@@ -257,7 +268,7 @@ function get_targets() {
 
    rm -f $OUT_DIR/alignment_targets.txt
    
-   for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
+   for ((i=0;$i<${#references_array[*]};i=$i+1)) do
       for ((j=0;$j<$NUM_FILES;j=$j+1)) do
          file=${files_array[$j]}
          file_base=`basename $file`
@@ -288,7 +299,7 @@ function get_targets() {
             echo "#!/bin/bash
 source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
 tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase bwa aln $parameters $reference _condition_fastq_input_$file \> _condition_throughput_$OUT_DIR/${alignment_moniker}.sai \; bwa samse $reference _condition_throughput_$OUT_DIR/${alignment_moniker}.sai _condition_fastq_input_$file  \> _condition_sam_output_$OUT_DIR/${alignment_moniker}.bam  
-tardis -hpctype $HPC_TYPE -q -d $OUT_DIR samtools $OUT_DIR/${alignment_moniker}.bam   > $OUT_DIR/${alignment_moniker}.stats 
+tardis -hpctype $HPC_TYPE -q -d $OUT_DIR samtools flagstat $OUT_DIR/${alignment_moniker}.bam   > $OUT_DIR/${alignment_moniker}.stats 
             " > $aligner_filename
          elif [ $ALIGNER == blastn ]; then
             echo "#!/bin/bash
