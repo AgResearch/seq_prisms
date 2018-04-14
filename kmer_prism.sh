@@ -4,24 +4,22 @@ declare -a files_array
 
 function get_opts() {
 
-   PWD0=$PWD
    DRY_RUN=no
    DEBUG=no
    HPC_TYPE=slurm
    FILES=
    OUT_DIR=
-   DATA_DIR=
    SAMPLE_RATE=
-   KMER_SIZE=6
-   ALPHABET=
-   MAX_TASKS=50
+   KMER_PARAMETERS="-k 6"
+   MAX_TASKS=1
    MIMIMUM_SAMPLE_SIZE=0
-   KMER_SOURCE=fasta
+   KMERER=fasta
+   FORCE=np
 
 
    help_text="
 \n
-./kmer_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-k kmersize ] [ -a fasta|fastq] -D datadir -O outdir [-C local|slurm ] input_file_names\n
+./kmer_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-p kmeroptions ] [ -a fasta|fastq] -D datadir -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
@@ -30,7 +28,7 @@ kmer_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL
 "
 
    # defaults:
-   while getopts ":nhO:C:D:s:m:" opt; do
+   while getopts ":nhfO:C:s:M:p:a:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -42,11 +40,11 @@ kmer_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL
          echo -e $help_text
          exit 0
          ;;
+       f)
+         FORCE=yes
+         ;;
        O)
          OUT_DIR=$OPTARG
-         ;;
-       D)
-         DATA_DIR=$OPTARG
          ;;
        C)
          HPC_TYPE=$OPTARG
@@ -57,14 +55,11 @@ kmer_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL
        M)
          MINIMUM_SAMPLE_SIZE=$OPTARG
          ;;
-       k)
-         KMER_SIZE=$OPTARG
+       p)
+         KMER_PARAMETERS=$OPTARG
          ;;
        a)
          KMERER=$OPTARG
-         ;;
-       m)
-         MAX_TASKS=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -93,6 +88,10 @@ kmer_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL
 
 
 function check_opts() {
+   if [  -z "$OUT_DIR" ]; then
+      echo "must specify OUT_DIR ( -O )"
+      exit 1
+   fi
    if [ ! -d $OUT_DIR ]; then
       echo "OUT_DIR $OUT_DIR not found"
       exit 1
@@ -119,6 +118,7 @@ function echo_opts() {
   echo KMER_SIZE=$KMER_SIZE
   echo KMERER=$KMERER
   echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
+  echo KMER_PARAMETERS=$KMER_PARAMETERS 
 
 }
 
@@ -193,30 +193,15 @@ function get_targets() {
 
       if [ $KMERER == fasta ]; then
          echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
-        " > $sampler_filename
-      elif [ $SAMPLER == fastq ]; then
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh cat _condition_fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
+        " > $kmerer_filename 
+      elif [ $KMERER == fastq ]; then
          echo "#!/bin/bash
 source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fastq
-         " > $sampler_filename
-      elif [ $SAMPLER == paired_fastq ]; then
-        if [ -z $file2 ]; then 
-           file2=$file
-           continue
-        elif [ -z $file1 ]; then
-           file1=$file2
-           file2=$file
-         echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fasta \; cat _condition_pairedfastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fasta 
-         " > $sampler_filename
-           file1=""
-           file2=""
-        fi
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh kmer_prism.py $KMER_PARAMETERS  _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+         " > $kmerer_filename
       else 
-         echo "unsupported sampler $SAMPLER "
+         echo "unsupported kmerer  $KMERER "
          exit 1
       fi
       chmod +x $sampler_filename
@@ -226,18 +211,15 @@ source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt`  > $OUT_DIR/kmer_prism.log 2>&1
+   make -n -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    echo "dry run : summary commands are 
-   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/kmer_prism.py -s .00015 -t zipfian -k 8 -p 30 -o zipfian8.txt -b /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/kmer_analysis /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz
-
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla  $OUT_DIR/mapping_stats_plots.r datafolder=$OUT_DIR
    "
    exit 0
 }
 
 function run_prism() {
    # this distributes the kmer distribtion builds for each file across the cluster
-   make -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS1 > $OUT_DIR/kmer_prism.log 2>&1
+   make -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    # this uses the pickled distributions to make the final spectra
    tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.txt -b $OUT_DIR $TARGETS2
    tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.txt -b $OUT_DIR $TARGETS2
@@ -254,7 +236,7 @@ function html_prism() {
 
 
 function main() {
-   get_opts $@
+   get_opts "$@"
    check_opts
    echo_opts
    check_env
@@ -275,6 +257,6 @@ function main() {
 
 
 set -x
-main $@
+main "$@"
 set +x
 
