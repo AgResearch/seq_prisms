@@ -12,7 +12,7 @@ function get_opts() {
    SAMPLE_RATE=
    KMER_PARAMETERS="-k 6"
    MAX_TASKS=1
-   MIMIMUM_SAMPLE_SIZE=0
+   MINIMUM_SAMPLE_SIZE=0
    KMERER=fasta
    FORCE=np
 
@@ -204,7 +204,7 @@ source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
          echo "unsupported kmerer  $KMERER "
          exit 1
       fi
-      chmod +x $sampler_filename
+      chmod +x $kmerer_filename 
    done 
 }
 
