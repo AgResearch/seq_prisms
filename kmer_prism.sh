@@ -7,7 +7,6 @@ function get_opts() {
    DRY_RUN=no
    DEBUG=no
    HPC_TYPE=slurm
-   FILES=
    OUT_DIR=
    SAMPLE_RATE=
    KMER_PARAMETERS="-k 6"
@@ -113,7 +112,6 @@ function echo_opts() {
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
   echo HPC_TYPE=$HPC_TYPE
-  echo FILES=$FILES
   echo SAMPLE_RATE=$SAMPLE_RATE
   echo KMER_SIZE=$KMER_SIZE
   echo KMERER=$KMERER
@@ -159,14 +157,7 @@ function get_targets() {
 
    rm -f $OUT_DIR/kmer_targets.txt
 
-
-   TARGETS1=""
-   TARGETS2=""
-   for file in $FILES; do
-      base=`basename $file`
-      TARGETS1="$TARGETS1 $OUT_DIR/${base}.kmer_prism"
-      TARGETS2="$TARGETS2 $OUT_DIR/${base}"
-   done 
+   SUMMARY_TARGETS=""
 
    sample_phrase=""
    if [ ! -z $SAMPLE_RATE ]; then
@@ -177,6 +168,7 @@ function get_targets() {
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
       file=${files_array[$j]}
       file_base=`basename $file`
+      SUMMARY_TARGETS="$SUMMARY_TARGETS $OUT_DIR/${file_base}.1"
       parameters_moniker=$KMER_SIZE
       kmerer_moniker=${file_base}.${KMERER}.${parameters_moniker}
       echo $TARGETS $OUT_DIR/${kmerer_moniker}.kmer_prism >> $OUT_DIR/kmer_targets.txt
@@ -193,12 +185,21 @@ function get_targets() {
 
       if [ $KMERER == fasta ]; then
          echo "#!/bin/bash
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh cat _condition_fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
+	tardis -q -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh cat  _condition_fasta_input_$file  \> _condition_uncompessedtext_output_$OUT_DIR/${file_base}.1
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  -shell-include-file configure_env.sh kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+        if [ $? == 0 ]; then
+           rm $OUT_DIR/${file_base}.1
+           rm $OUT_DIR/${file_base}.frequency.txt
+        fi
         " > $kmerer_filename 
       elif [ $KMERER == fastq ]; then
          echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh kmer_prism.py $KMER_PARAMETERS  _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+	tardis -q -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh cat  _condition_fastq2fasta_input_$file  \> _condition_uncompressedtext_output_$OUT_DIR/${file_base}.1
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  -shell-include-file configure_env.sh kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+        if [ $? == 0 ]; then
+           rm $OUT_DIR/${file_base}.1
+           rm $OUT_DIR/${file_base}.frequency.txt
+        fi
          " > $kmerer_filename
       else 
          echo "unsupported kmerer  $KMERER "
@@ -221,10 +222,10 @@ function run_prism() {
    # this distributes the kmer distribtion builds for each file across the cluster
    make -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    # this uses the pickled distributions to make the final spectra
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.txt -b $OUT_DIR $TARGETS2
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.txt -b $OUT_DIR $TARGETS2
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -a CGAT -t zipfian -o $OUT_DIR/kmer_summary.txt -b $OUT_DIR $TARGETS2
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -a CGAT -t frequency -o $OUT_DIR/kmer_frequency.txt -b $OUT_DIR $TARGETS2
+   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.txt -b $OUT_DIR $SUMMARY_TARGETS
+   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.txt -b $OUT_DIR $SUMMARY_TARGETS
+   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -a CGAT -t zipfian -o $OUT_DIR/kmer_summary.txt -b $OUT_DIR $SUMMARY_TARGETS
+   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -a CGAT -t frequency -o $OUT_DIR/kmer_frequency.txt -b $OUT_DIR $SUMMARY_TARGETS
    # do plots. This will fail until we sort out R env - need to run manually 
    #/dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript --vanilla  $(GBS_BIN)/kmer_plots_gbs.r datafolder=$(dir $@)
    tardis.py -hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla $OUT_DIR/kmer_plots_gbs.r datafolder=$OUT_DIR
