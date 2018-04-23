@@ -13,7 +13,7 @@ function get_opts() {
    MAX_TASKS=1
    MINIMUM_SAMPLE_SIZE=0
    KMERER=fasta
-   FORCE=np
+   FORCE=no
 
 
    help_text="
@@ -141,8 +141,15 @@ min_sample_size=$MINIMUM_SAMPLE_SIZE
 source activate /dataset/bioinformatics_dev/active/conda-env/biopython
 PATH="$OUT_DIR:$PATH"
 PYTHONPATH="$OUT_DIR:$PYTHONPATH"
-" > $OUT_DIR/configure_env.sh
+" > $OUT_DIR/configure_biopython_env.src
    cd $OUT_DIR
+   echo "
+source activate /dataset/bioinformatics_dev/active/conda-env/bioconductor
+PATH="$OUT_DIR:$PATH"
+PYTHONPATH="$OUT_DIR:$PYTHONPATH"
+" > $OUT_DIR/configure_bioconductor_env.src
+   cd $OUT_DIR
+
 }
 
 
@@ -185,8 +192,8 @@ function get_targets() {
 
       if [ $KMERER == fasta ]; then
          echo "#!/bin/bash
-	tardis -q -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh cat  _condition_fasta_input_$file  \> _condition_uncompessedtext_output_$OUT_DIR/${file_base}.1
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  -shell-include-file configure_env.sh kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+	tardis -q -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_biopython_env.src cat  _condition_fasta_input_$file  \> _condition_uncompessedtext_output_$OUT_DIR/${file_base}.1
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  -shell-include-file configure_biopython_env.src kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
         if [ $? == 0 ]; then
            rm $OUT_DIR/${file_base}.1
            rm $OUT_DIR/${file_base}.frequency.txt
@@ -194,8 +201,8 @@ function get_targets() {
         " > $kmerer_filename 
       elif [ $KMERER == fastq ]; then
          echo "#!/bin/bash
-	tardis -q -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_env.sh cat  _condition_fastq2fasta_input_$file  \> _condition_uncompressedtext_output_$OUT_DIR/${file_base}.1
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  -shell-include-file configure_env.sh kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+	tardis -q -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase -shell-include-file configure_biopython_env.src cat  _condition_fastq2fasta_input_$file  \> _condition_uncompressedtext_output_$OUT_DIR/${file_base}.1
+	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  -shell-include-file configure_biopython_env.src kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
         if [ $? == 0 ]; then
            rm $OUT_DIR/${file_base}.1
            rm $OUT_DIR/${file_base}.frequency.txt
@@ -222,13 +229,33 @@ function run_prism() {
    # this distributes the kmer distribtion builds for each file across the cluster
    make -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    # this uses the pickled distributions to make the final spectra
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.txt -b $OUT_DIR $SUMMARY_TARGETS
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.txt -b $OUT_DIR $SUMMARY_TARGETS
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -a CGAT -t zipfian -o $OUT_DIR/kmer_summary.txt -b $OUT_DIR $SUMMARY_TARGETS
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_env.sh kmer_prism.py -k 6 -a CGAT -t frequency -o $OUT_DIR/kmer_frequency.txt -b $OUT_DIR $SUMMARY_TARGETS
-   # do plots. This will fail until we sort out R env - need to run manually 
-   #/dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript --vanilla  $(GBS_BIN)/kmer_plots_gbs.r datafolder=$(dir $@)
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla $OUT_DIR/kmer_plots_gbs.r datafolder=$OUT_DIR
+   if [[ ( ! -f $OUT_DIR/kmer_summary_plus.txt ) || ( $FORCE == "yes" ) ]]; then 
+      tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
+   else
+      echo "(skipping $OUT_DIR/kmer_summary_plus.txt as exists and FORCE=no)"
+   fi
+
+   if [[ ( ! -f $OUT_DIR/kmer_frequency_plus.txt ) || ( $FORCE == "yes" ) ]]; then 
+      tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
+   else
+      echo "(skipping $OUT_DIR/kmer_frequency_plus.txt as exists and FORCE=no)"
+   fi
+
+   
+   if [[ ( ! -f $OUT_DIR/kmer_summary.txt ) || ( $FORCE == "yes" ) ]]; then 
+      tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t zipfian -o $OUT_DIR/kmer_summary.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
+   else
+      echo "(skipping $OUT_DIR/kmer_summary.txt as exists and FORCE=no)"
+   fi
+
+
+   if [[ ( ! -f $OUT_DIR/kmer_frequency.txt ) || ( $FORCE == "yes" ) ]]; then 
+      tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t frequency -o $OUT_DIR/kmer_frequency.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
+   else
+      echo "(skipping $OUT_DIR/kmer_frequency.txt as exists and FORCE=no)"
+   fi
+
+   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_bioconductor_env.src Rscript --vanilla $OUT_DIR/kmer_plots.r datafolder=$OUT_DIR >> $OUT_DIR/kmer_prism.log 2>&1
 }
 
 function html_prism() {
