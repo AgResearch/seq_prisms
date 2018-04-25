@@ -292,6 +292,10 @@ draw_zipfian_plots <- function(datalist, output_folder, zipfian_plot_image_file,
    # (- i.e. very similar to "zipf law" plot of log(freq) ~ log (freq rank), but with different 
    # slope and intercept)
    plot_rows = ceiling(ncol(datalist$log_rank_data)/zipfian_plots_per_row)
+   if ( plot_rows > 500 ) {
+      print(paste("skipping individual zipf plots as too many points for this function (",plot_rows,")"))
+      return()
+   }
    plot_width=1300
    plot_height = 300 * plot_rows
    jpeg(filename = zipfian_plot_image_file, plot_width, plot_height)
@@ -399,10 +403,10 @@ main <- function() {
    data_folder <- get_command_args()
    output_folder <- data_folder
    mydata <- get_data(data_folder, input_file, colname_pattern)
-   draw_entropy_heatmap(mydata$entropy_data, output_folder, heatmap_image_file, number_of_heatmap_row_labels, number_of_column_labels)
-   draw_zipfian_plots(mydata, output_folder, zipfian_plot_image_file, zipfian_plots_per_row) 
    draw_comparison_plot(mydata, output_folder, comparison_plot_image_file, zipfian_plot_comparisons)
    draw_distances_plot(mydata, output_folder, distances_plot_image_file, zipfian_plot_comparisons, number_of_column_labels)
+   draw_entropy_heatmap(mydata$entropy_data, output_folder, heatmap_image_file, number_of_heatmap_row_labels, number_of_column_labels)
+   draw_zipfian_plots(mydata, output_folder, zipfian_plot_image_file, zipfian_plots_per_row) 
    return(mydata)
 }
 

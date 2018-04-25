@@ -139,13 +139,13 @@ min_sample_size=$MINIMUM_SAMPLE_SIZE
 " > $OUT_DIR/.tardishrc
    echo "
 source activate /dataset/bioinformatics_dev/active/conda-env/biopython
-PATH="$OUT_DIR:$PATH"
+PATH="$OUT_DIR:\$PATH"
 PYTHONPATH="$OUT_DIR:$PYTHONPATH"
 " > $OUT_DIR/configure_biopython_env.src
    cd $OUT_DIR
    echo "
 source activate /dataset/bioinformatics_dev/active/conda-env/bioconductor
-PATH="$OUT_DIR:$PATH"
+PATH="$OUT_DIR:\$PATH"
 PYTHONPATH="$OUT_DIR:$PYTHONPATH"
 " > $OUT_DIR/configure_bioconductor_env.src
    cd $OUT_DIR
@@ -183,7 +183,7 @@ function get_targets() {
       # generate wrapper
       kmerer_filename=$OUT_DIR/${kmerer_moniker}.sh
 
-      if [ -f kmerer_filename ]; then
+      if [ -f $kmerer_filename ]; then
          if [ ! $FORCE == yes ]; then
             echo "found existing kmerer $kmerer_filename - will re-use (use -f to force rebuild of kmerers) "
             continue
@@ -230,12 +230,14 @@ function run_prism() {
    make -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    # this uses the pickled distributions to make the final spectra
    if [[ ( ! -f $OUT_DIR/kmer_summary_plus.txt ) || ( $FORCE == "yes" ) ]]; then 
+      rm -f $OUT_DIR/kmer_summary_plus.txt
       tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
    else
       echo "(skipping $OUT_DIR/kmer_summary_plus.txt as exists and FORCE=no)"
    fi
 
    if [[ ( ! -f $OUT_DIR/kmer_frequency_plus.txt ) || ( $FORCE == "yes" ) ]]; then 
+      rm -f $OUT_DIR/kmer_frequency_plus.txt
       tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
    else
       echo "(skipping $OUT_DIR/kmer_frequency_plus.txt as exists and FORCE=no)"
@@ -243,6 +245,7 @@ function run_prism() {
 
    
    if [[ ( ! -f $OUT_DIR/kmer_summary.txt ) || ( $FORCE == "yes" ) ]]; then 
+      rm -f $OUT_DIR/kmer_summary.txt
       tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t zipfian -o $OUT_DIR/kmer_summary.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
    else
       echo "(skipping $OUT_DIR/kmer_summary.txt as exists and FORCE=no)"
@@ -250,6 +253,7 @@ function run_prism() {
 
 
    if [[ ( ! -f $OUT_DIR/kmer_frequency.txt ) || ( $FORCE == "yes" ) ]]; then 
+      rm -f  $OUT_DIR/kmer_frequency.txt
       tardis.py -hpctype $HPC_TYPE -d $OUT_DIR -shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t frequency -o $OUT_DIR/kmer_frequency.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
    else
       echo "(skipping $OUT_DIR/kmer_frequency.txt as exists and FORCE=no)"
