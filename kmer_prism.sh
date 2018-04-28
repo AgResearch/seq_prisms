@@ -269,6 +269,11 @@ function run_prism() {
    mv $OUT_DIR/zipfian_distances.jpg $OUT_DIR/zipfian_distances.${parameters_moniker}.jpg
 }
 
+function clean() {
+   rm -rf $OUT_DIR/tardis_*
+}
+
+
 function html_prism() {
    echo "tba" > $OUT_DIR/kmer_prism.html 2>&1
 }
@@ -286,6 +291,7 @@ function main() {
    else
       run_prism
       if [ $? == 0 ] ; then
+         clean
          html_prism
       else
          echo "error state from kmer run - skipping html page generation"
