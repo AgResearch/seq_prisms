@@ -267,6 +267,8 @@ function run_prism() {
    mv $OUT_DIR/kmer_zipfian_comparisons.jpg $OUT_DIR/kmer_zipfian_comparisons.${parameters_moniker}.jpg
    mv $OUT_DIR/kmer_zipfian.jpg $OUT_DIR/kmer_zipfian.${parameters_moniker}.jpg
    mv $OUT_DIR/zipfian_distances.jpg $OUT_DIR/zipfian_distances.${parameters_moniker}.jpg
+   mv $OUT_DIR/heatmap_sample_clusters.txt $OUT_DIR/heatmap_sample_clusters.${parameters_moniker}.txt
+   mv $OUT_DIR/zipfian_distances_fit.txt $OUT_DIR/zipfian_distances_fit.${parameters_moniker}.txt
 }
 
 function clean() {
