@@ -105,11 +105,9 @@ function configure_env() {
    cp ./taxonomy_prism.py $OUT_DIR
    cp ./data_prism.py $OUT_DIR  # temporary measure - data_prism will be packaged and installed in system 
    cp ./taxonomy_prism.r $OUT_DIR
-   echo "
-[tardish]
-[tardis_engine]
-max_tasks=$MAX_TASKS
-" > $OUT_DIR/.tardishrc
+   cat >$OUT_DIR/tardis.toml <<EOF
+max_tasks = $MAX_TASKS
+EOF
    cd $OUT_DIR
 }
 
