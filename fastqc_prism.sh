@@ -97,11 +97,9 @@ function configure_env() {
    cd $SEQ_PRISMS_BIN
    cp ./fastqc_prism.sh $OUT_DIR
    cp ./fastqc_prism.mk $OUT_DIR
-   echo "
-[tardish]
-[tardis_engine]
-max_tasks=$MAX_TASKS
-" > $OUT_DIR/.tardishrc
+   cat >$OUT_DIR/tardis.toml <<EOF
+max_tasks = $MAX_TASKS
+EOF
    cd $OUT_DIR
 }
 

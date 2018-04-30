@@ -122,13 +122,10 @@ function configure_env() {
    cd $SEQ_PRISMS_BIN
    cp ./sample_prism.sh $OUT_DIR
    cp ./sample_prism.mk $OUT_DIR
-   echo "
-[tardish]
-[tardis_engine]
-max_tasks=$MAX_TASKS
-min_sample_size=$MINIMUM_SAMPLE_SIZE
-
-" > $OUT_DIR/.tardishrc
+   cat >$OUT_DIR/tardis.toml <<EOF
+max_tasks = $MAX_TASKS
+min_sample_size = $MINIMUM_SAMPLE_SIZE
+EOF
    cd $OUT_DIR
 }
 

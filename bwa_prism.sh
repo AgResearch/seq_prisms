@@ -104,11 +104,9 @@ function configure_env() {
    cp ./bwa_prism.mk $OUT_DIR
    cp ./collate_mapping_stats.py $OUT_DIR
    cp ./mapping_stats_plots.r $OUT_DIR
-   echo "
-[tardish]
-[tardis_engine]
-max_tasks=$MAX_TASKS
-" > $OUT_DIR/.tardishrc
+   cat >$OUT_DIR/tardis.toml <<EOF
+max_tasks = $MAX_TASKS
+EOF
    cd $OUT_DIR
 }
 

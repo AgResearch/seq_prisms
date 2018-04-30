@@ -131,12 +131,10 @@ function configure_env() {
    cp ./kmer_prism.py $OUT_DIR
    cp ./data_prism.py $OUT_DIR
    cp ./kmer_plots.r $OUT_DIR
-   echo "
-[tardish]
-[tardis_engine]
-max_tasks=$MAX_TASKS
-min_sample_size=$MINIMUM_SAMPLE_SIZE
-" > $OUT_DIR/.tardishrc
+   cat >$OUT_DIR/tardis.toml <<EOF
+max_tasks = $MAX_TASKS
+min_sample_size = $MINIMUM_SAMPLE_SIZE
+EOF
    echo "
 source activate /dataset/bioinformatics_dev/active/conda-env/biopython
 PATH="$OUT_DIR:\$PATH"
