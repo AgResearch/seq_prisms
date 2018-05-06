@@ -132,21 +132,21 @@ function fake_prism() {
    echo "dry run ! "
    make -n -f taxonomy_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/taxonomy_prism.log 2>&1
    echo "dry run : summary commands are 
-   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR  $OUT_DIR/taxonomy_prism.py --summary_type summary_table --rownames --measure information $OUT_DIR/*.fastq.gz.blastresults.gz.pickle  > $OUT_DIR/information_table.txt
-   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR  /dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\"Taxonomy Summary (100 most variable taxa)\" summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr
+   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR  $OUT_DIR/taxonomy_prism.py --summary_type summary_table --rownames --measure information $OUT_DIR/*.fastq.gz.blastresults.gz.pickle  > $OUT_DIR/information_table.txt
+   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR  /dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\"Taxonomy Summary (100 most variable taxa)\" summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr
    "
    exit 0
 }
 
 function run_prism() {
    make -f taxonomy_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/taxonomy_prism.log 2>&1
-   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR  $OUT_DIR/taxonomy_prism.py --summary_type summary_table --rownames --measure "information" $OUT_DIR/*.blastresults.*.pickle  > $OUT_DIR/information_table.txt
+   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR  $OUT_DIR/taxonomy_prism.py --summary_type summary_table --rownames --measure "information" $OUT_DIR/*.blastresults.*.pickle  > $OUT_DIR/information_table.txt
 
    # currently the next line will fail, as the libraries Heatplus, RColorBrewer, gplots ansd matrixStats not available to the
    # R instance in the bifo-essential conda env. As a work-around until this is sorted , locate the run1.sh wrapper script and run the plot build manally 
    # on (e.g. ) intrepid, using /dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript  
 
-   echo "need to run : tardis.py -hpctype $HPC_TYPE -d $OUT_DIR  Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\'Taxonomy Summary \(100 most variable taxa\)\' summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr"
+   echo "need to run : tardis.py --hpctype $HPC_TYPE -d $OUT_DIR  Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\'Taxonomy Summary \(100 most variable taxa\)\' summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr"
 }
 
 function html_prism() {

@@ -131,16 +131,16 @@ function fake_prism() {
    echo "dry run ! "
    make -n -f bwa_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/bwa_prism.log 2>&1
    echo "dry run : summary commands are 
-   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/collate_mapping_stats.py $OUT_DIR/*.stats > $OUT_DIR/stats_summary.txt
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla  $OUT_DIR/mapping_stats_plots.r datafolder=$OUT_DIR
+   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/collate_mapping_stats.py $OUT_DIR/*.stats > $OUT_DIR/stats_summary.txt
+   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla  $OUT_DIR/mapping_stats_plots.r datafolder=$OUT_DIR
    "
    exit 0
 }
 
 function run_prism() {
    make -f bwa_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/bwa_prism.log 2>&1
-   tardis.py -q -hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/collate_mapping_stats.py $OUT_DIR/*.stats > $OUT_DIR/stats_summary.txt
-   tardis.py -hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla  $OUT_DIR/mapping_stats_plots.r datafolder=$OUT_DIR
+   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/collate_mapping_stats.py $OUT_DIR/*.stats > $OUT_DIR/stats_summary.txt
+   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR Rscript --vanilla  $OUT_DIR/mapping_stats_plots.r datafolder=$OUT_DIR
 }
 
 function html_prism() {

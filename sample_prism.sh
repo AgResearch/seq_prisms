@@ -171,12 +171,12 @@ function get_targets() {
       if [ $SAMPLER == fasta ]; then
          echo "#!/bin/bash
 source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
+	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
         " > $sampler_filename
       elif [ $SAMPLER == fastq ]; then
          echo "#!/bin/bash
 source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fastq
+	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fastq
          " > $sampler_filename
       elif [ $SAMPLER == paired_fastq ]; then
         if [ -z $file2 ]; then 
@@ -187,7 +187,7 @@ source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
            file2=$file
          echo "#!/bin/bash
 source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis -hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fasta \; cat _condition_pairedfastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fasta 
+	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fasta \; cat _condition_pairedfastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fasta 
          " > $sampler_filename
            file1=""
            file2=""
