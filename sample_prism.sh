@@ -4,7 +4,6 @@ declare -a files_array
 
 function get_opts() {
 
-   PWD0=$PWD
    DRY_RUN=no
    DEBUG=no
    HPC_TYPE=slurm
@@ -14,6 +13,7 @@ function get_opts() {
    MAX_TASKS=1
    MINIMUM_SAMPLE_SIZE=0
    SAMPLER=fastq
+   FORCE=no
 
 
    help_text="
@@ -22,18 +22,23 @@ function get_opts() {
 \n
 \n
 example:\n
-sample_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
+sample_prism.sh -n  -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
+sample_prism.sh -n  -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
+sample_prism.sh -n  -s .00001 -M 10000 -a tag_count -O /dataset/hiseq/scratch/postprocessing/gbs/weevils_tassel3/fasta  /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt\n
 \n
 "
 
    # defaults:
-   while getopts ":nhO:C:D:s:m:M:a:" opt; do
+   while getopts ":nhfO:C:D:s:m:M:a:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
          ;;
        d)
          DEBUG=yes
+         ;;
+       f)
+         FORCE=yes
          ;;
        h)
          echo -e $help_text
@@ -94,7 +99,7 @@ function check_opts() {
       exit 1
    fi
 
-   if [[ $SAMPLER != "fasta" && $SAMPLER != "fastq" && $SAMPLER != "paired_fastq" ]]; then
+   if [[ $SAMPLER != "fasta" && $SAMPLER != "fastq" && $SAMPLER != "paired_fastq"  && $SAMPLER != "tag_count" ]]; then
       echo "SAMPLER must be fasta or fastq"
       exit 1
    fi
@@ -126,6 +131,9 @@ function configure_env() {
 max_tasks = $MAX_TASKS
 min_sample_size = $MINIMUM_SAMPLE_SIZE
 EOF
+   echo "
+source activate tassel3
+" > $OUT_DIR/tassel3_env.src
    cd $OUT_DIR
 }
 
@@ -146,6 +154,9 @@ function get_targets() {
    sample_phrase=""
    if [ ! -z $SAMPLE_RATE ]; then
       sample_phrase="-s $SAMPLE_RATE"
+      if [ $MINIMUM_SAMPLE_SIZE != "0" ]; then
+         sample_phrase="-s $SAMPLE_RATE -M $MINIMUM_SAMPLE_SIZE"
+      fi
    fi 
 
   
@@ -153,9 +164,10 @@ function get_targets() {
    file2=""
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
       file=${files_array[$j]}
-      file_base=`basename $file`
+      file_base=`basename "$file"`
       parameters_moniker=`echo $sample_phrase | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
-      sampler_moniker=${file_base}.${SAMPLER}.${parameters_moniker}
+      sampler_moniker="${file_base}.${SAMPLER}.${parameters_moniker}"
+      sampler_moniker=`echo $sampler_moniker | sed 's/ /space/g' | sed 's/\//\./g' | sed 's/\\\/\./g'`
       echo $OUT_DIR/${sampler_moniker}.sample_prism >> $OUT_DIR/sampling_targets.txt
 
       # generate wrapper
@@ -170,13 +182,11 @@ function get_targets() {
 
       if [ $SAMPLER == fasta ]; then
          echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq2fasta_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fasta
         " > $sampler_filename
       elif [ $SAMPLER == fastq ]; then
          echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fastq
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq_input_$file  \> _condition_text_output_$OUT_DIR/${sampler_moniker}.fastq
          " > $sampler_filename
       elif [ $SAMPLER == paired_fastq ]; then
         if [ -z $file2 ]; then 
@@ -185,13 +195,17 @@ source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
         elif [ -z $file1 ]; then
            file1=$file2
            file2=$file
-         echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
-	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fasta \; cat _condition_pairedfastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fasta 
+        echo "#!/bin/bash
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fasta \; cat _condition_pairedfastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fasta 
          " > $sampler_filename
            file1=""
            file2=""
         fi
+      elif [ $SAMPLER == tag_count ]; then
+        # tardis can't easily sample tag count files - so no tardid conditioning done here
+        echo "#!/bin/bash
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR --shell-include-file $OUT_DIR/tassel3_env.src  $SEQ_PRISMS_BIN/cat_tag_count.sh -O fasta $sample_phrase \"$file\"  \> $OUT_DIR/${sampler_moniker}.fasta
+" > $sampler_filename
       else 
          echo "unsupported sampler $SAMPLER "
          exit 1
@@ -222,8 +236,8 @@ function main() {
    check_opts
    echo_opts
    check_env
-   get_targets
    configure_env
+   get_targets
    if [ $DRY_RUN != "no" ]; then
       fake_prism
    else
