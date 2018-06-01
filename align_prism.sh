@@ -7,7 +7,6 @@ declare -a files_array
 
 function get_opts() {
 
-   PWD0=$PWD
    DRY_RUN=no
    DEBUG=no
    HPC_TYPE=slurm
@@ -243,11 +242,11 @@ function configure_env() {
 max_tasks = $MAX_TASKS
 EOF
    cd $OUT_DIR
-   echo "
-source activate /dataset/bioinformatics_dev/active/conda-env/biopython
-PATH=\"$OUT_DIR:$PATH\"
-PYTHONPATH=\"$OUT_DIR:$PYTHONPATH\"
-" > $OUT_DIR/configure_env.sh
+#   echo "
+#source activate /dataset/bioinformatics_dev/active/conda-env/biopython
+#PATH=\"$OUT_DIR:$PATH\"
+#PYTHONPATH=\"$OUT_DIR:$PYTHONPATH\"
+#" > $OUT_DIR/configure_env.sh
 }
 
 
@@ -271,7 +270,7 @@ function get_targets() {
          file=${files_array[$j]}
          file_base=`basename $file`
 	 ref_base=`basename ${references_array[$i]}`
-         parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
+         parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g' | sed "s/'//g"  | sed 's/\\\//g' `
          alignment_moniker=${file_base}.${ALIGNER}.${ref_base}.${parameters_moniker}
          echo $OUT_DIR/${alignment_moniker}.align_prism >> $OUT_DIR/alignment_targets.txt
 
@@ -295,18 +294,15 @@ function get_targets() {
 
          if [ $ALIGNER == bwa ]; then
             echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase bwa aln $parameters $reference _condition_fastq_input_$file \> _condition_throughput_$OUT_DIR/${alignment_moniker}.sai \; bwa samse $reference _condition_throughput_$OUT_DIR/${alignment_moniker}.sai _condition_fastq_input_$file  \> _condition_sam_output_$OUT_DIR/${alignment_moniker}.bam  
 tardis --hpctype $HPC_TYPE -q -d $OUT_DIR samtools flagstat $OUT_DIR/${alignment_moniker}.bam   > $OUT_DIR/${alignment_moniker}.stats 
             " > $aligner_filename
          elif [ $ALIGNER == blastn ]; then
             echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
             " > $aligner_filename
          elif [ $ALIGNER == qblastn ]; then
             echo "#!/bin/bash
-source /dataset/bioinformatics_dev/scratch/tardis/bin/activate
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -query  _condition_fastq2fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
             " > $aligner_filename
          else 
@@ -337,6 +333,9 @@ function html_prism() {
    echo "tba" > $OUT_DIR/align_prism.html 2>&1
 }
 
+function clean() {
+   rm -rf $OUT_DIR/tardis_*
+}
 
 function main() {
    get_opts "$@"
@@ -351,8 +350,9 @@ function main() {
       run_prism
       if [ $? == 0 ] ; then
          html_prism
+         clean
       else
-         echo "error state from bwa run - skipping html page generation"
+         echo "error state from run - skipping clean and html page generation"
          exit 1
       fi
    fi

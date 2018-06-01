@@ -301,7 +301,7 @@ function main() {
          clean
          html_prism
       else
-         echo "error state from kmer run - skipping html page generation"
+         echo "error state from kmer run - skipping clean and html page generation"
          exit 1
       fi
    fi
