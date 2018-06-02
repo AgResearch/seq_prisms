@@ -1,30 +1,30 @@
 #!/bin/bash
 
+declare -a files_array
+
 function get_opts() {
 
-   PWD0=$PWD
    DRY_RUN=no
    DEBUG=no
    HPC_TYPE=slurm
-   FILES=
    OUT_DIR=
-   DATA_DIR=
    SAMPLE_RATE=
-   MAX_TASKS=50
+   MAX_TASKS=1
+   FORCE=no
+   TAX_PARAMETERS=none
 
 
    help_text="
 \n
-./taxonomy_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] -D datadir -O outdir [-C local|slurm ] input_file_names\n
+./taxonomy_prism.sh  [-h] [-n] [-d] [-p taxonomyoptions ] -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
-taxonomy_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/taxonomy  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
 \n
 "
 
    # defaults:
-   while getopts ":nhO:C:D:s:m:" opt; do
+   while getopts ":nhfO:C:s:M:p:a:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -36,20 +36,17 @@ taxonomy_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tas
          echo -e $help_text
          exit 0
          ;;
+       f)
+         FORCE=yes
+         ;;
        O)
          OUT_DIR=$OPTARG
-         ;;
-       D)
-         DATA_DIR=$OPTARG
          ;;
        C)
          HPC_TYPE=$OPTARG
          ;;
-       s)
-         SAMPLE_RATE=$OPTARG
-         ;;
-       m)
-         MAX_TASKS=$OPTARG
+       p)
+         TAX_PARAMETERS=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -64,20 +61,28 @@ taxonomy_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tas
 
    shift $((OPTIND-1))
 
-   FILES=$@
+   FILE_STRING=$@
+
+   # this is needed because of the way we process args a "$@" - which 
+   # is needed in order to parse parameter sets to be passed to the 
+   # aligner (which are space-separated)
+   declare -a files="(${FILE_STRING})";
+   NUM_FILES=${#files[*]}
+   for ((i=0;$i<$NUM_FILES;i=$i+1)) do
+      files_array[$i]=${files[$i]}     
+   done
 }
 
 
 function check_opts() {
+   if [  -z "$OUT_DIR" ]; then
+      echo "must specify OUT_DIR ( -O )"
+      exit 1
+   fi
    if [ ! -d $OUT_DIR ]; then
       echo "OUT_DIR $OUT_DIR not found"
       exit 1
    fi
-   if [ ! -d $DATA_DIR ]; then
-      echo "DATA_DIR $DATA_DIR not found"
-      exit 1
-   fi
-
    if [[ $HPC_TYPE != "local" && $HPC_TYPE != "slurm" ]]; then
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
@@ -85,13 +90,12 @@ function check_opts() {
 }
 
 function echo_opts() {
-  echo DATA_DIR=$DATA_DIR
   echo OUT_DIR=$OUT_DIR
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
   echo HPC_TYPE=$HPC_TYPE
-  echo FILES=$FILES
-  echo SAMPLE_RATE=$SAMPLE_RATE
+  echo TAX_PARAMETERS=$TAX_PARAMETERS 
+
 }
 
 #
@@ -103,12 +107,19 @@ function configure_env() {
    cp ./taxonomy_prism.sh $OUT_DIR
    cp ./taxonomy_prism.mk $OUT_DIR
    cp ./taxonomy_prism.py $OUT_DIR
-   cp ./data_prism.py $OUT_DIR  # temporary measure - data_prism will be packaged and installed in system 
-   cp ./taxonomy_prism.r $OUT_DIR
+   cp ./data_prism.py $OUT_DIR
+   cp ./taxonomy_plots.r $OUT_DIR
    cat >$OUT_DIR/tardis.toml <<EOF
 max_tasks = $MAX_TASKS
 EOF
    cd $OUT_DIR
+   echo "
+source activate /dataset/bioinformatics_dev/active/conda-env/bioconductor
+PATH="$OUT_DIR:\$PATH"
+PYTHONPATH="$OUT_DIR:$PYTHONPATH"
+" > $OUT_DIR/configure_bioconductor_env.src
+   cd $OUT_DIR
+
 }
 
 
@@ -120,34 +131,62 @@ function check_env() {
 }
 
 function get_targets() {
-   TARGETS=""
-   for file in $FILES; do
-      base=`basename $file`
-      TARGETS="$TARGETS $OUT_DIR/${base}.taxonomy_prism"
+
+   rm -f $OUT_DIR/taxonomy_targets.txt
+
+   SUMMARY_TARGETS=""
+
+   sample_phrase=""
+   if [ ! -z $SAMPLE_RATE ]; then
+      sample_phrase="-s $SAMPLE_RATE"
+   fi 
+
+   
+   for ((j=0;$j<$NUM_FILES;j=$j+1)) do
+      file=${files_array[$j]}
+      file_base=`basename $file`
+      parameters_moniker=`echo $TAX_PARAMETERS | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
+      SUMMARY_TARGETS="$SUMMARY_TARGETS $OUT_DIR/${file_base}.${parameters_moniker}.1"
+      taxonomy_moniker=${file_base}.${parameters_moniker}
+      echo $TARGETS $OUT_DIR/${taxonomy_moniker}.taxonomy_prism >> $OUT_DIR/taxonomy_targets.txt
+
+      # generate wrapper
+      taxonomy_filename=$OUT_DIR/${taxonomy_moniker}.sh
+
+      if [ -f $taxonomy_filename ]; then
+         if [ ! $FORCE == yes ]; then
+            echo "found existing taxonomy $taxonomy_filename - will re-use (use -f to force rebuild of taxonomys) "
+            continue
+         fi
+      fi
+
+      echo "#!/bin/bash
+tardis.py --hpctype $HPC_TYPE -d $OUT_DIR $OUT_DIR/taxonomy_prism.py $file
+" > $taxonomy_filename 
+      chmod +x $taxonomy_filename 
    done 
 }
 
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f taxonomy_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR  $TARGETS > $OUT_DIR/taxonomy_prism.log 2>&1
+   make -n -f taxonomy_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/taxonomy_targets.txt` > $OUT_DIR/taxonomy_prism.log 2>&1
    echo "dry run : summary commands are 
-   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR  $OUT_DIR/taxonomy_prism.py --summary_type summary_table --rownames --measure information $OUT_DIR/*.fastq.gz.blastresults.gz.pickle  > $OUT_DIR/information_table.txt
-   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR  /dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\"Taxonomy Summary (100 most variable taxa)\" summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr
    "
    exit 0
 }
 
 function run_prism() {
-   make -f taxonomy_prism.mk -d -k  --no-builtin-rules -j 16 hpc_type=$HPC_TYPE sample_rate=$SAMPLE_RATE data_dir=$DATA_DIR out_dir=$OUT_DIR $TARGETS > $OUT_DIR/taxonomy_prism.log 2>&1
-   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR  $OUT_DIR/taxonomy_prism.py --summary_type summary_table --rownames --measure "information" $OUT_DIR/*.blastresults.*.pickle  > $OUT_DIR/information_table.txt
-
-   # currently the next line will fail, as the libraries Heatplus, RColorBrewer, gplots ansd matrixStats not available to the
-   # R instance in the bifo-essential conda env. As a work-around until this is sorted , locate the run1.sh wrapper script and run the plot build manally 
-   # on (e.g. ) intrepid, using /dataset/bioinformatics_dev/active/R3.3/R-3.3.0/bin/Rscript  
-
-   echo "need to run : tardis.py --hpctype $HPC_TYPE -d $OUT_DIR  Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\'Taxonomy Summary \(100 most variable taxa\)\' summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr"
+   # this distributes the taxonomy distribtion builds for each file across the cluster
+   make -f taxonomy_prism.mk -d $OUT_DIR -k  --no-builtin-rules -j 16 `cat $OUT_DIR/taxonomy_targets.txt` > $OUT_DIR/taxonomy_prism.log 2>&1
+   # this uses the pickled distributions to make the final spectra
+   #tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_bioconductor_env.src Rscript --vanilla $OUT_DIR/taxonomy_plots.r datafolder=$OUT_DIR >> $OUT_DIR/taxonomy_prism.log 2>&1
 }
+
+function clean() {
+   rm -rf $OUT_DIR/tardis_*
+}
+
 
 function html_prism() {
    echo "tba" > $OUT_DIR/taxonomy_prism.html 2>&1
@@ -155,7 +194,7 @@ function html_prism() {
 
 
 function main() {
-   get_opts $@
+   get_opts "$@"
    check_opts
    echo_opts
    check_env
@@ -166,9 +205,10 @@ function main() {
    else
       run_prism
       if [ $? == 0 ] ; then
+         clean
          html_prism
       else
-         echo "error state from taxonomy run - skipping html page generation"
+         echo "error state from taxonomy run - skipping clean and html page generation"
          exit 1
       fi
    fi
@@ -176,5 +216,6 @@ function main() {
 
 
 set -x
-main $@
+main "$@"
 set +x
+
