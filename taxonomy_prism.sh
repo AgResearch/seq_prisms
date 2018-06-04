@@ -12,11 +12,12 @@ function get_opts() {
    MAX_TASKS=1
    FORCE=no
    TAX_PARAMETERS=none
+   ANALYSIS_NAME=none
 
 
    help_text="
 \n
-./taxonomy_prism.sh  [-h] [-n] [-d] [-p taxonomyoptions ] -O outdir [-C local|slurm ] input_file_names\n
+./taxonomy_prism.sh  [-h] [-n] [-d] [-p taxonomyoptions ] [-a analysis_name] -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
@@ -47,6 +48,9 @@ example:\n
          ;;
        p)
          TAX_PARAMETERS=$OPTARG
+         ;;
+       a)
+         ANALYSIS_NAME=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -95,6 +99,7 @@ function echo_opts() {
   echo DEBUG=$DEBUG
   echo HPC_TYPE=$HPC_TYPE
   echo TAX_PARAMETERS=$TAX_PARAMETERS 
+  echo ANALYSIS_NAME=$ANALYSIS_NAME  
 
 }
 
@@ -108,7 +113,7 @@ function configure_env() {
    cp ./taxonomy_prism.mk $OUT_DIR
    cp ./taxonomy_prism.py $OUT_DIR
    cp ./data_prism.py $OUT_DIR
-   cp ./taxonomy_plots.r $OUT_DIR
+   cp ./taxonomy_prism.r $OUT_DIR
    cat >$OUT_DIR/tardis.toml <<EOF
 max_tasks = $MAX_TASKS
 EOF
@@ -180,7 +185,9 @@ function run_prism() {
    # this distributes the taxonomy distribtion builds for each file across the cluster
    make -f taxonomy_prism.mk -d $OUT_DIR -k  --no-builtin-rules -j 16 `cat $OUT_DIR/taxonomy_targets.txt` > $OUT_DIR/taxonomy_prism.log 2>&1
    # this uses the pickled distributions to make the final spectra
-   #tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_bioconductor_env.src Rscript --vanilla $OUT_DIR/taxonomy_plots.r datafolder=$OUT_DIR >> $OUT_DIR/taxonomy_prism.log 2>&1
+   tardis.py -q --hpctype $HPC_TYPE -d $OUT_DIR  $OUT_DIR/taxonomy_prism.py --summary_type summary_table --rownames --measure "information" $OUT_DIR/*.results.gz.pickle  > $OUT_DIR/information_table.txt
+   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR  --shell-include-file configure_bioconductor_env.src Rscript --vanilla  $OUT_DIR/taxonomy_prism.r analysis_name=\'$ANALYSIS_NAME\' summary_table_file=$OUT_DIR/information_table.txt output_base=\"taxonomy_summary\" 1\>${OUT_DIR}/plots.stdout 2\>${OUT_DIR}/plots.stderr
+
 }
 
 function clean() {
