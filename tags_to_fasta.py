@@ -37,6 +37,7 @@ def getSampleBool(samplerate):
          return 0
 
 def tags_to_fasta(options):
+    print options
     tag_iter = (record for record in sys.stdin)
     tag_iter = (re.split("\s+",record.strip().upper()) for record in tag_iter)    # parse the 3 elements 
     tag_iter = ((my_tuple[0], int(my_tuple[1]), int(my_tuple[2]))  for my_tuple in tag_iter if len(my_tuple) == 3)  # skip the header and make ints
@@ -45,23 +46,28 @@ def tags_to_fasta(options):
     if not options["unique"]:
         tag_iters = (  itertools.repeat(  my_tuple[0][0:my_tuple[1]]  , my_tuple[2]) for my_tuple in tag_iter)  # use the tag-length to substring the tag then throw away the numbers
     else:
-        tag_iters = (  itertools.repeat(  my_tuple[0][0:my_tuple[1]]  , 1) for my_tuple in tag_iter)
+        tag_iters = (  itertools.repeat(  ( my_tuple[0][0:my_tuple[1]], my_tuple[2])  , 1) for my_tuple in tag_iter)
     seq_number = 1
     for tag_iter in tag_iters:
         for tag in tag_iter:
             if options["samplerate"] is None:
-                print ">seq_%d"%seq_number
-                print tag
-                seq_number += 1
-            else:
-                if getSampleBool(options["samplerate"]) == 1:
+                if options["unique"]:
+                    print ">seq_%d count=%d"%(seq_number,tag[1])
+                    print tag[0]
+                else:
                     print ">seq_%d"%seq_number
                     print tag
                 seq_number += 1
+            else:
+                if getSampleBool(options["samplerate"]) == 1:
+                    if options["unique"]:
+                        print ">seq_%d count=%d"%(seq_number,tag[1])
+                        print tag[0]
+                    else:
+                        print ">seq_%d"%seq_number
+                        print tag
+                seq_number += 1
                     
-                    
-                
-
 
 def get_options():
     description = """

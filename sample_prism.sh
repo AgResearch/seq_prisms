@@ -99,7 +99,7 @@ function check_opts() {
       exit 1
    fi
 
-   if [[ $SAMPLER != "fasta" && $SAMPLER != "fastq" && $SAMPLER != "paired_fastq"  && $SAMPLER != "tag_count" ]]; then
+   if [[ $SAMPLER != "fasta" && $SAMPLER != "fastq" && $SAMPLER != "paired_fastq"  && $SAMPLER != "tag_count" && $SAMPLER != "tag_count_unique" ]]; then
       echo "SAMPLER must be fasta or fastq"
       exit 1
    fi
@@ -202,9 +202,14 @@ tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfas
            file2=""
         fi
       elif [ $SAMPLER == tag_count ]; then
-        # tardis can't easily sample tag count files - so no tardid conditioning done here
+        # tardis can't easily sample tag count files - so no tardis conditioning done here
         echo "#!/bin/bash
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR --shell-include-file $OUT_DIR/tassel3_env.src  $SEQ_PRISMS_BIN/cat_tag_count.sh -O fasta $sample_phrase \"$file\"  \> $OUT_DIR/${sampler_moniker}.fasta
+" > $sampler_filename
+      elif [ $SAMPLER == tag_count_unique ]; then
+        # tardis can't easily sample tag count files - so no tardis conditioning done here
+        echo "#!/bin/bash
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR --shell-include-file $OUT_DIR/tassel3_env.src  $SEQ_PRISMS_BIN/cat_tag_count.sh -u -O fasta $sample_phrase \"$file\"  \> $OUT_DIR/${sampler_moniker}.fasta
 " > $sampler_filename
       else 
          echo "unsupported sampler $SAMPLER "
