@@ -37,7 +37,7 @@ def getSampleBool(samplerate):
          return 0
 
 def tags_to_fasta(options):
-    print options
+    #print options
     tag_iter = (record for record in sys.stdin)
     tag_iter = (re.split("\s+",record.strip().upper()) for record in tag_iter)    # parse the 3 elements 
     tag_iter = ((my_tuple[0], int(my_tuple[1]), int(my_tuple[2]))  for my_tuple in tag_iter if len(my_tuple) == 3)  # skip the header and make ints
@@ -50,23 +50,24 @@ def tags_to_fasta(options):
     seq_number = 1
     for tag_iter in tag_iters:
         for tag in tag_iter:
-            if options["samplerate"] is None:
+            selected = 1
+
+            if options["samplerate"] is not None:
+                selected  = getSampleBool(options["samplerate"])
+
+            if options["minimum_count"] is not None:
+                if tag[1] < options["minimum_count"]:
+                    selected = 0
+                
+            
+            if selected == 1:
                 if options["unique"]:
                     print ">seq_%d count=%d"%(seq_number,tag[1])
                     print tag[0]
                 else:
                     print ">seq_%d"%seq_number
                     print tag
-                seq_number += 1
-            else:
-                if getSampleBool(options["samplerate"]) == 1:
-                    if options["unique"]:
-                        print ">seq_%d count=%d"%(seq_number,tag[1])
-                        print tag[0]
-                    else:
-                        print ">seq_%d"%seq_number
-                        print tag
-                seq_number += 1
+            seq_number += 1
                     
 
 def get_options():
@@ -84,6 +85,8 @@ def get_options():
     parser = argparse.ArgumentParser(description=description, epilog=long_description, formatter_class = argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-u', '--unique' , dest='unique', action='store_true', help="list unique tags")
     parser.add_argument('-s', '--samplerate', dest='samplerate', type=float, metavar='sample rate', default = None, help="specify a random sampling rate - e.g. .1 means randomly sample around 10%% etc.")
+    parser.add_argument('-m', '--minimum_count', dest='minimum_count', type=int, metavar='minimum count', default = None, help="specify a minimum count")
+
 
     args = vars(parser.parse_args())
 

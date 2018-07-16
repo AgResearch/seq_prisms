@@ -9,6 +9,7 @@
 # convenience wrapper to cat a tag-count file 
 sample_rate=none
 minimum_sample_size=0
+minimum_tag_count=0
 
 function get_opts() {
 
@@ -38,7 +39,7 @@ help_text="
 
 FORMAT="text"
 unique=no
-while getopts ":huO:s:M:" opt; do
+while getopts ":huO:s:M:m:" opt; do
   case $opt in
     h)
       echo -e $help_text
@@ -52,6 +53,9 @@ while getopts ":huO:s:M:" opt; do
       ;;
     M)
       minimum_sample_size=$OPTARG
+      ;;
+    m)
+      minimum_tag_count=$OPTARG
       ;;
     O)
       FORMAT=$OPTARG
@@ -109,6 +113,10 @@ function check_opts() {
   fi
 }
 
+function echo_opts() {
+   echo minimum_tag_count=$minimum_tag_count
+   echo sample_phrase=$sample_phrase
+}
 
 function get_sample_phrase() {
   sample_phrase=""
@@ -120,11 +128,16 @@ function get_sample_phrase() {
         sample_phrase="-s $new_sample_rate"
      fi
   fi
+  if [ $minimum_tag_count != "0" ]; then
+     sample_phrase="$sample_phrase -m $minimum_tag_count"
+  fi
 }
 
 # get and check opts
 get_opts $@
 check_opts
+get_sample_phrase
+#echo_opts
 
 
 # set up a file for the stdout / stderr of this run
@@ -189,7 +202,6 @@ if [ $? == 0 ]; then
 fi
 
 #start process to read fifo and list to stdout
-get_sample_phrase
  
 if [ $FORMAT == "text" ]; then
    if [ -z "$sample_phrase" ]; then

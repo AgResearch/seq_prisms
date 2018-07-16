@@ -12,24 +12,26 @@ function get_opts() {
    SAMPLE_RATE=""
    MAX_TASKS=1
    MINIMUM_SAMPLE_SIZE=0
+   MINIMUM_TAG_COUNT=0
    SAMPLER=fastq
    FORCE=no
 
 
    help_text="
 \n
-./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-M minimum sample size] -a sampler -O outdir [-C local|slurm ] input_file_names\n
+./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-M minimum sample size] [-t minium_tag_count] -a sampler -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
 sample_prism.sh -n  -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
 sample_prism.sh -n  -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
 sample_prism.sh -n  -s .00001 -M 10000 -a tag_count -O /dataset/hiseq/scratch/postprocessing/gbs/weevils_tassel3/fasta  /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt\n
+sample_prism.sh -n  -t 2  -a tag_count_unique -O /dataset/hiseq/scratch/postprocessing/gbs/weevils_tassel3/fasta  /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt\n
 \n
 "
 
    # defaults:
-   while getopts ":nhfO:C:D:s:m:M:a:" opt; do
+   while getopts ":nhfO:C:D:s:m:M:a:m:t:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -58,6 +60,9 @@ sample_prism.sh -n  -s .00001 -M 10000 -a tag_count -O /dataset/hiseq/scratch/po
          ;;
        m)
          MAX_TASKS=$OPTARG
+         ;;
+       t)
+         MINIMUM_TAG_COUNT=$OPTARG
          ;;
        M)
          MINIMUM_SAMPLE_SIZE=$OPTARG
@@ -104,6 +109,10 @@ function check_opts() {
       exit 1
    fi
 
+   if [[ $SAMPLER != "tag_count"  &&  $SAMPLER != "tag_count_unique" && $MINIMUM_TAG_COUNT != "0" ]]; then 
+      echo "minimum tag count is only applicable to tag file sampling"
+      exit 1
+   fi
 }
 
 function echo_opts() {
@@ -115,7 +124,7 @@ function echo_opts() {
   echo SAMPLE_RATE=$SAMPLE_RATE
   echo SAMPLER=$SAMPLER
   echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
-
+  echo MINIMUM_TAG_COUNT=$MINIMUM_TAG_COUNT
 }
 
 
@@ -132,7 +141,7 @@ max_tasks = $MAX_TASKS
 min_sample_size = $MINIMUM_SAMPLE_SIZE
 EOF
    echo "
-source activate tassel3
+conda activate tassel3
 " > $OUT_DIR/tassel3_env.src
    cd $OUT_DIR
 }
@@ -159,6 +168,12 @@ function get_targets() {
       fi
    fi 
 
+   if [ $MINIMUM_TAG_COUNT != "0" ]; then
+      sample_phrase="$sample_phrase -m $MINIMUM_TAG_COUNT "
+   fi
+
+
+
   
    file1=""
    file2=""
@@ -166,8 +181,11 @@ function get_targets() {
       file=${files_array[$j]}
       file_base=`basename "$file"`
       parameters_moniker=`echo $sample_phrase | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
+      if [ $MINIMUM_TAG_COUNT != "0" ]; then
+         parameters_moniker="${parameters_moniker}_taggtMINIMUM_TAG_COUNT"
+      fi
       sampler_moniker="${file_base}.${SAMPLER}.${parameters_moniker}"
-      sampler_moniker=`echo $sampler_moniker | sed 's/ /space/g' | sed 's/\//\./g' | sed 's/\\\/\./g'`
+      sampler_moniker=`echo $sampler_moniker | sed 's/ /space/g' | sed 's/\//\./g' | sed 's/\\\/\./g' | sed 's/\.$//g' `
       echo $OUT_DIR/${sampler_moniker}.sample_prism >> $OUT_DIR/sampling_targets.txt
 
       # generate wrapper
