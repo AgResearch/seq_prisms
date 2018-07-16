@@ -119,7 +119,7 @@ max_tasks = $MAX_TASKS
 EOF
    cd $OUT_DIR
    echo "
-source activate /dataset/bioinformatics_dev/active/conda-env/bioconductor
+conda activate /dataset/bioinformatics_dev/active/conda-env/bioconductor
 PATH="$OUT_DIR:\$PATH"
 PYTHONPATH="$OUT_DIR:$PYTHONPATH"
 " > $OUT_DIR/configure_bioconductor_env.src

@@ -135,13 +135,13 @@ max_tasks = $MAX_TASKS
 min_sample_size = $MINIMUM_SAMPLE_SIZE
 EOF
    echo "
-source activate /dataset/bioinformatics_dev/active/conda-env/biopython
+conda activate /dataset/bioinformatics_dev/active/conda-env/biopython
 PATH="$OUT_DIR:\$PATH"
 PYTHONPATH="$OUT_DIR:$PYTHONPATH"
 " > $OUT_DIR/configure_biopython_env.src
    cd $OUT_DIR
    echo "
-source activate /dataset/bioinformatics_dev/active/conda-env/bioconductor
+conda activate /dataset/bioinformatics_dev/active/conda-env/bioconductor
 PATH="$OUT_DIR:\$PATH"
 PYTHONPATH="$OUT_DIR:$PYTHONPATH"
 " > $OUT_DIR/configure_bioconductor_env.src
