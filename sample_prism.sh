@@ -182,7 +182,7 @@ function get_targets() {
       file_base=`basename "$file"`
       parameters_moniker=`echo $sample_phrase | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
       if [ $MINIMUM_TAG_COUNT != "0" ]; then
-         parameters_moniker="${parameters_moniker}_taggtMINIMUM_TAG_COUNT"
+         parameters_moniker="${parameters_moniker}_taggt$MINIMUM_TAG_COUNT"
       fi
       sampler_moniker="${file_base}.${SAMPLER}.${parameters_moniker}"
       sampler_moniker=`echo $sampler_moniker | sed 's/ /space/g' | sed 's/\//\./g' | sed 's/\\\/\./g' | sed 's/\.$//g' `
