@@ -105,7 +105,11 @@ draw_most_variable_heatmap <- function(args, taxa_count) {
    indexSelector <- indexSelector[rowBlankSelector]
    rowLabels[indexSelector] = rep('',length(indexSelector))
 
-   jpeg(filename = paste(args$output_base,"_variable.jpg",sep=""), width=2800, height=2400) # with dendrograms
+   plot_width=2800
+   if(ncol(sdatamatrix) > 200) {
+      plot_width=3500
+   }
+   jpeg(filename = paste(args$output_base,"_variable.jpg",sep=""), width=plot_width, height=2400) # with dendrograms
    hm<-heatmap.2(as.matrix(sdatamatrix),  scale = "none", 
        dendrogram = "col",  
        trace="none",
@@ -123,7 +127,7 @@ draw_most_variable_heatmap <- function(args, taxa_count) {
    write.table(colnames(as.matrix(sdatamatrix))[hm$colInd[1:length(hm$colInd)]] , file=paste(args$output_base, "_samplenames_variable_ordered.dat",sep=""),row.names=TRUE,sep="\t")
    # the row labels on the plots may be truncated  so supply a file with the 
    # row  names ordered as per the plot
-   write.table(rownames(as.matrix(sdatamatrix))[hm$rowInd[length(hm$rowInd):1]] , file=paste(args$output_base, "_taxnames_vaiable_ordered.dat",sep=""),row.names=TRUE,sep="\t")
+   write.table(rownames(as.matrix(sdatamatrix))[hm$rowInd[length(hm$rowInd):1]] , file=paste(args$output_base, "_taxnames_variable_ordered.dat",sep=""),row.names=TRUE,sep="\t")
 
    clust = as.hclust(hm$colDendrogram) 
    write.table(cutree(clust, 1:dim(sdatamatrix)[2]),file=paste(args$output_base, "_variable.heatmap_clusters.txt",sep=""),row.names=TRUE,sep="\t")  # ref https://stackoverflow.com/questions/18354501/how-to-get-member-of-clusters-from-rs-hclust-heatmap-2
@@ -231,7 +235,11 @@ draw_profiles_heatmap <- function(args, num_clust) {
    colLabels[indexSelector] = rep('',length(indexSelector))
 
    #jpeg(filename = paste(moniker, ".jpg",sep=""), width=1400, height=1000) # with dendrograms
-   jpeg(filename = paste(args$output_base,"_profile.jpg",sep=""), width=2800, height=2400) # with dendrograms
+   plot_width=2800
+   if(ncol(clustered_data) > 200) {
+      plot_width=3500
+   } 
+   jpeg(filename = paste(args$output_base,"_profile.jpg",sep=""), width=plot_width, height=2400) # with dendrograms
 
    hm<-heatmap.2(as.matrix(clustered_data),  scale = "none", 
        dendrogram = "col",  
