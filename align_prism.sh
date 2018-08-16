@@ -100,19 +100,19 @@ function test_if_fofn() {
    is_fofn=1
    if [ -z "$1" ]; then
       is_fofn=0
-   elif [ ! -f $1 ]; then
+   elif [[ ( ! -f $1 ) && ( ! -h $1 ) ]]; then
       is_fofn=0
    else
       IFS=$'\n'
       # if the first and last 50 records are filenames, assume fofn
       for record in `awk '/\S+/{print}' $1 | head -50`; do  
-         if [ ! -f $record ]; then 
+         if [[ ( ! -f $record ) && ( ! -h $record ) ]]; then 
             is_fofn=0
             break
          fi
       done
       for record in `awk '/\S+/{print}' $1 | tail -50`; do  
-         if [ ! -f $record ]; then 
+         if [[ ( ! -f $record ) && ( ! -h $record ) ]]; then 
             is_fofn=0
             break
          fi
@@ -121,6 +121,17 @@ function test_if_fofn() {
       unset IFN
    fi
 }
+
+function test_if_f() {
+   # test whether the arg is a link or file  
+   is_f=1
+   if [ -z "$1" ]; then
+      is_f=0
+   elif [[ ( ! -f $1 ) && ( ! -h $1 ) ]]; then
+      is_f=0
+   fi
+}
+
 
 
 function check_opts() {
@@ -149,13 +160,13 @@ function check_opts() {
       references_array[0]=$REFERENCES
       NUM_REFERENCES=1
 
-      test_if_fofn $PARAMETERS
+      test_if_f $PARAMETERS
 
       if [ -z "$PARAMETERS"  ]; then
          echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
          parameters_array[0]=$PARAMETERS
          NUM_PARAMETERS=1
-      elif [ $is_fofn != 1  ]; then
+      elif [ $is_f != 1  ]; then
          parameters_array[0]=$PARAMETERS      
          NUM_PARAMETERS=1
       else   # we have a filename listing a number n of alt parameters ( - so will duplicate reference n times )
@@ -180,14 +191,14 @@ function check_opts() {
       done
       NUM_REFERENCES=${#references_array[*]}
 
-      test_if_fofn $PARAMETERS
+      test_if_f $PARAMETERS
 
       if [ -z "$PARAMETERS"  ]; then
          echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
          NUM_PARAMETERS=1
       fi
 
-      if [ $is_fofn != 1  ]; then
+      if [ $is_f != 1  ]; then
          echo "cloning $NUM_REFERENCES parameter sets"
          for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
             parameters_array[$i]=$PARAMETERS      
@@ -270,7 +281,7 @@ function get_targets() {
          file=${files_array[$j]}
          file_base=`basename $file`
 	 ref_base=`basename ${references_array[$i]}`
-         parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g' | sed "s/'//g"  | sed 's/\\\//g' `
+         parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g' | sed "s/'//g"  | sed 's/\\\//g' | sed 's/"//g' `
          alignment_moniker=${file_base}.${ALIGNER}.${ref_base}.${parameters_moniker}
          echo $OUT_DIR/${alignment_moniker}.align_prism >> $OUT_DIR/alignment_targets.txt
 
@@ -281,7 +292,7 @@ function get_targets() {
          fi 
 
          reference=${references_array[$i]}
-         parameters=${parameters_array[$i]}
+         parameters=`echo ${parameters_array[$i]} | sed 's/"//g'`
 
          aligner_filename=$OUT_DIR/${alignment_moniker}.sh
 
