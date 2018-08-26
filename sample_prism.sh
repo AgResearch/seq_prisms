@@ -13,13 +13,14 @@ function get_opts() {
    MAX_TASKS=1
    MINIMUM_SAMPLE_SIZE=0
    MINIMUM_TAG_COUNT=0
+   MAXIMUM_TAG_COUNT=0
    SAMPLER=fastq
    FORCE=no
 
 
    help_text="
 \n
-./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-M minimum sample size] [-t minium_tag_count] -a sampler -O outdir [-C local|slurm ] input_file_names\n
+./sample_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-M minimum sample size] [-t minium_tag_count] [ -T maximum_tag_count] -a sampler -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
@@ -31,7 +32,7 @@ sample_prism.sh -n  -t 2  -a tag_count_unique -O /dataset/hiseq/scratch/postproc
 "
 
    # defaults:
-   while getopts ":nhfO:C:D:s:m:M:a:m:t:" opt; do
+   while getopts ":nhfO:C:D:s:m:M:a:m:t:T:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -63,6 +64,9 @@ sample_prism.sh -n  -t 2  -a tag_count_unique -O /dataset/hiseq/scratch/postproc
          ;;
        t)
          MINIMUM_TAG_COUNT=$OPTARG
+         ;;
+       T)
+         MAXIMUM_TAG_COUNT=$OPTARG
          ;;
        M)
          MINIMUM_SAMPLE_SIZE=$OPTARG
@@ -109,8 +113,8 @@ function check_opts() {
       exit 1
    fi
 
-   if [[ $SAMPLER != "tag_count"  &&  $SAMPLER != "tag_count_unique" && $MINIMUM_TAG_COUNT != "0" ]]; then 
-      echo "minimum tag count is only applicable to tag file sampling"
+   if [[ $SAMPLER != "tag_count"  &&  $SAMPLER != "tag_count_unique" && ( $MINIMUM_TAG_COUNT != "0" || $MAXIMUM_TAG_COUNT != "0" ) ]]; then 
+      echo "minimum/maximum tag count is only applicable to tag file sampling"
       exit 1
    fi
 }
@@ -125,6 +129,7 @@ function echo_opts() {
   echo SAMPLER=$SAMPLER
   echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
   echo MINIMUM_TAG_COUNT=$MINIMUM_TAG_COUNT
+  echo MAXIMUM_TAG_COUNT=$MAXIMUM_TAG_COUNT
 }
 
 
@@ -172,8 +177,9 @@ function get_targets() {
       sample_phrase="$sample_phrase -m $MINIMUM_TAG_COUNT "
    fi
 
-
-
+   if [ $MAXIMUM_TAG_COUNT != "0" ]; then
+      sample_phrase="$sample_phrase -T $MAXIMUM_TAG_COUNT "
+   fi
   
    file1=""
    file2=""
