@@ -163,7 +163,7 @@ function get_targets() {
    sample_phrase=""
    if [ ! -z $SAMPLE_RATE ]; then
       sample_phrase="-s $SAMPLE_RATE"
-      if [ $MINIMUM_SAMPLE_SIZE != "0" ]; then
+      if [[ ( $MINIMUM_SAMPLE_SIZE != "0" ) && ( $SAMPLER == "tag_count" ) ]]; then
          sample_phrase="-s $SAMPLE_RATE -M $MINIMUM_SAMPLE_SIZE"
       fi
    fi 
