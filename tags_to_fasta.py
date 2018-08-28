@@ -50,19 +50,33 @@ def tags_to_fasta(options):
     seq_number = 1
     for tag_iter in tag_iters:
         for tag in tag_iter:
+            count = tag[1]
             selected = 1
 
             if options["samplerate"] is not None:
-                selected  = getSampleBool(options["samplerate"])
+                if options["unique"]:
+                    # if necessary calculate probability we should sample this tag = 1-(1-p)**tag_count
+                    p = options["samplerate"]
+                    if tag[1] > 1:
+                        p = 1 - ( 1 - options["samplerate"] ) ** tag[1] 
+                        count = count * options["samplerate"] / p
+
+                    selected  = getSampleBool(p)
+                    #print "DEBUG", tag, p, selected
+                else:
+                    selected  = getSampleBool(options["samplerate"])
 
             if options["minimum_count"] is not None:
                 if tag[1] < options["minimum_count"]:
                     selected = 0
-                
+
+            if options["maximum_count"] is not None:
+                if tag[1] > options["maximum_count"]:
+                    selected = 0
             
             if selected == 1:
                 if options["unique"]:
-                    print ">seq_%d count=%d"%(seq_number,tag[1])
+                    print ">seq_%d count=%f"%(seq_number,count)
                     print tag[0]
                 else:
                     print ">seq_%d"%seq_number
@@ -86,7 +100,7 @@ def get_options():
     parser.add_argument('-u', '--unique' , dest='unique', action='store_true', help="list unique tags")
     parser.add_argument('-s', '--samplerate', dest='samplerate', type=float, metavar='sample rate', default = None, help="specify a random sampling rate - e.g. .1 means randomly sample around 10%% etc.")
     parser.add_argument('-m', '--minimum_count', dest='minimum_count', type=int, metavar='minimum count', default = None, help="specify a minimum count")
-
+    parser.add_argument('-M', '--maximum_count', dest='maximum_count', type=int, metavar='maximum count', default = None, help="specify a maximum count")
 
     args = vars(parser.parse_args())
 

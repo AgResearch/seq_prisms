@@ -39,7 +39,7 @@ help_text="
 
 FORMAT="text"
 unique=no
-while getopts ":huO:s:M:m:" opt; do
+while getopts ":huO:s:M:m:T:" opt; do
   case $opt in
     h)
       echo -e $help_text
@@ -56,6 +56,9 @@ while getopts ":huO:s:M:m:" opt; do
       ;;
     m)
       minimum_tag_count=$OPTARG
+      ;;
+    T)
+      maximum_tag_count=$OPTARG
       ;;
     O)
       FORMAT=$OPTARG
@@ -115,6 +118,7 @@ function check_opts() {
 
 function echo_opts() {
    echo minimum_tag_count=$minimum_tag_count
+   echo maximum_tag_count=$maximum_tag_count
    echo sample_phrase=$sample_phrase
 }
 
@@ -130,6 +134,9 @@ function get_sample_phrase() {
   fi
   if [ $minimum_tag_count != "0" ]; then
      sample_phrase="$sample_phrase -m $minimum_tag_count"
+  fi
+  if [ $maximum_tag_count != "0" ]; then
+     sample_phrase="$sample_phrase -M $maximum_tag_count"
   fi
 }
 
