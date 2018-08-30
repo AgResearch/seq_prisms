@@ -26,9 +26,14 @@
 	$@.sh
 	date > $@
 
-%.fastqc:  
+%.bcl2fastq:  
 	$@.sh
 	date > $@
+
+%.fastqc:
+	$@.sh
+	date > $@
+
 
 
 

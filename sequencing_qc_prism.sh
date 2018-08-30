@@ -19,8 +19,10 @@ function get_opts() {
    help_text="
 usage :
 ./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|taxonomy_analysis|all] -O outdir [file [.. file]] 
-example:
-./sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
+examples:
+sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
+sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+
 "
    while getopts ":nhfO:C:r:a:" opt; do
    case $opt in
@@ -97,6 +99,13 @@ function check_opts() {
       exit 1
    fi
 
+   if [ $ANALYSIS == "bcl2fastq" ]; then
+      if [ $NUM_FILES != 1 ]; then
+         echo "for bcl2fastq analysis , supply the path to the sample sheet as argument"
+         exit 1
+      fi
+   fi
+
 }
 
 function echo_opts() {
@@ -156,7 +165,7 @@ function get_targets() {
       file_moniker=$base
 
 
-      for analysis_type in all bcl2fastqc fastqc fastq_sample kmer_analysis blast_analysis fasta_sample taxonomy_analysis fastqc mapping_analysis ; do
+      for analysis_type in bcl2fastq all fastqc fastq_sample kmer_analysis blast_analysis fasta_sample taxonomy_analysis fastqc mapping_analysis ; do
          echo $OUT_ROOT/$file_moniker.$analysis_type  >> $OUT_ROOT/${analysis_type}_targets.txt
          script=$OUT_ROOT/${file_moniker}.${analysis_type}.sh
          if [ -f $script ]; then
@@ -165,20 +174,69 @@ function get_targets() {
                continue
             fi
          fi
+
+         # bcl2fastq is special , we only generate a single target
+         if [ $ANALYSIS == "bcl2fastq" ]; then
+            break
+         fi
       done
+
+      ############### bcl2fastq script
+      if [ $ANALYSIS == "bcl2fastq" ]; then 
+# example : 
+#/usr/local/bin/bcl2fastq -p 8 --ignore-missing-bcls --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls --auto-set-to-zero-barcode-mismatches --find-adapters-with-sliding-window --adapter-stringency 0.9 --mask-short-adapter-reads 35 --minimum-trimmed-read-length 35 -R /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX --sample-sheet /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv -o /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed_in_progress/bcl2fastq_in_progress -i /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/Data/Intensities/BaseCalls
+
+         # for bcl2fastq, file is the sample sheet
+         run_dir=`dirname $file`
+         in_dir=$run_dir/Data/Intensities/BaseCalls
+         echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p bcl2fastq
+# run bcl2fastq
+ulimit -n 4000; bcl2fastq -p 8 --ignore-missing-bcls --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls --auto-set-to-zero-barcode-mismatches --find-adapters-with-sliding-window --adapter-stringency 0.9 --mask-short-adapter-reads 35 --minimum-trimmed-read-length 35 -R $run_dir  --sample-sheet $file  -o $OUT_ROOT/bcl2fastq  -i $in_dir  > $OUT_ROOT/bcl2fastq/bcl2fastq.log 2>&1
+if [ $? != 0 ]; then
+   echo \"bcl2fastq  of $file returned an error code\"
+   exit 1
+fi
+         " > $OUT_ROOT/${file_moniker}.bcl2fastq.sh
+         chmod +x $OUT_ROOT/${file_moniker}.bcl2fastq.sh
+
+         # bcl2fastq is special , we only generate a single target
+         return
+      fi
+
 
       ############### fastqc script
       echo "#!/bin/bash
 cd $OUT_ROOT
 mkdir -p fastqc
 # run fastqc
-tardis fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>$OUT_ROOT/fastqc/fastqc.log 2>&1
+tardis --hpctype $HPC_TYPE fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>$OUT_ROOT/fastqc/fastqc.log 2>&1
 if [ $? != 0 ]; then
    echo \"fastqc  of $file returned an error code\"
    exit 1
 fi
       " > $OUT_ROOT/${file_moniker}.fastqc.sh
    chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
+
+
+      ############### fastq sample 
+      echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p fastqc
+# run fastqc
+tardis --hpctype $HPC_TYPE fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>$OUT_ROOT/fastqc/fastqc.log 2>&1
+if [ $? != 0 ]; then
+   echo \"fastqc  of $file returned an error code\"
+   exit 1
+fi
+      " > $OUT_ROOT/${file_moniker}.fastqc.sh
+   chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
+
+
+
+
+
    done
 }
 
