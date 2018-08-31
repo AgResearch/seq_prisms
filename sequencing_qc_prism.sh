@@ -15,16 +15,18 @@ function get_opts() {
    OUT_ROOT=""
    FORCE=no
    ANALYSIS=all
+   MINIMUM_SAMPLE_SIZE="0"
+   SAMPLE_RATE=""
 
    help_text="
 usage :
-./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|taxonomy_analysis|all] -O outdir [file [.. file]] 
+./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|taxonomy_analysis|all] [-s sample rate] -O outdir [file [.. file]] 
 examples:
 sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
 sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-
+sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX/bcl2fastq/*.fastq.gz
 "
-   while getopts ":nhfO:C:r:a:" opt; do
+   while getopts ":nhfO:C:r:a:s:M:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -39,8 +41,11 @@ sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illum
          echo -e "$help_text"
          exit 0
          ;;
-       r)
-         RUN=$OPTARG
+       s)
+         SAMPLE_RATE=$OPTARG
+         ;;
+       M)
+         MINIMUM_SAMPLE_SIZE=$OPTARG
          ;;
        a)
          ANALYSIS=$OPTARG
@@ -116,7 +121,8 @@ function echo_opts() {
   echo FILES=${files_array[*]}
   echo ENGINE=$ENGINE
   echo ANALYSIS=$ANALYSIS
-
+  echo SAMPLE_RATE=$SAMPLE_RATE
+  echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
 }
 
 
@@ -158,14 +164,49 @@ function get_targets() {
    # wrapper, which will be called by make
 
    rm -f $OUT_ROOT/*_targets.txt
+   rm -f $OUT_ROOT/file_list.txt
 
+
+   sample_phrase=""
+   if [ ! -z $SAMPLE_RATE ]; then
+      sample_phrase="-s $SAMPLE_RATE"
+      if [ $MINIMUM_SAMPLE_SIZE != "0" ]; then
+         sample_phrase="-s $SAMPLE_RATE -M $MINIMUM_SAMPLE_SIZE"
+      fi
+   fi
+
+   
+   ################## file-set targets (for these we call another prism, passing it the list of files)
+   for ((j=0;$j<$NUM_FILES;j=$j+1)) do
+      file=${files_array[$j]}
+      echo $file >> $OUT_ROOT/file_list.txt
+   done
+   
+   ###### fastq sample 
+   echo $OUT_ROOT/qc.fastq_sample  >> $OUT_ROOT/fastq_sample_targets.txt
+   echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p fastq_sample
+# run fastq_sample
+$OUT_ROOT/sample_prism.sh $sample_phrase -a fastq -O $OUT_ROOT/fastq_sample \`cat $OUT_ROOT/file_list.txt\`  > $OUT_ROOT/fastq_sample/fastq_sample.log 2>&1
+if [ $? != 0 ]; then
+   echo \"fastq sample returned an error code\"
+   exit 1
+fi
+      " > $OUT_ROOT/qc.fastq_sample.sh
+   chmod +x $OUT_ROOT/qc.fastq_sample.sh
+
+
+
+   ################## individual file targets (for these we call anotherapplication)
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
       file=${files_array[$j]}
       base=`basename $file`
       file_moniker=$base
 
 
-      for analysis_type in bcl2fastq all fastqc fastq_sample kmer_analysis blast_analysis fasta_sample taxonomy_analysis fastqc mapping_analysis ; do
+      #for analysis_type in bcl2fastq all fastqc fastq_sample kmer_analysis blast_analysis fasta_sample taxonomy_analysis fastqc mapping_analysis ; do
+      for analysis_type in bcl2fastq fastqc ; do
          echo $OUT_ROOT/$file_moniker.$analysis_type  >> $OUT_ROOT/${analysis_type}_targets.txt
          script=$OUT_ROOT/${file_moniker}.${analysis_type}.sh
          if [ -f $script ]; then
@@ -217,27 +258,12 @@ if [ $? != 0 ]; then
    exit 1
 fi
       " > $OUT_ROOT/${file_moniker}.fastqc.sh
-   chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
-
-
-      ############### fastq sample 
-      echo "#!/bin/bash
-cd $OUT_ROOT
-mkdir -p fastqc
-# run fastqc
-tardis --hpctype $HPC_TYPE fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>$OUT_ROOT/fastqc/fastqc.log 2>&1
-if [ $? != 0 ]; then
-   echo \"fastqc  of $file returned an error code\"
-   exit 1
-fi
-      " > $OUT_ROOT/${file_moniker}.fastqc.sh
-   chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
-
-
-
-
-
+      chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
    done
+
+
+
+
 }
 
 

@@ -26,6 +26,10 @@
 	$@.sh
 	date > $@
 
+%.fastq_sample:  
+	$@.sh
+	date > $@
+
 %.bcl2fastq:  
 	$@.sh
 	date > $@
@@ -41,7 +45,7 @@
 ##############################################
 # specify the intermediate files to keep 
 ##############################################
-.PRECIOUS: %.log %.all %.taxonomy_analysis %.blast_analysis %.kmer_analysis %.fasta_analysis %.fasta %.all 
+.PRECIOUS: %.log %.all %.taxonomy_analysis %.blast_analysis %.kmer_analysis %.fasta_sample %.fastq_sample %.fastqc %.bcl2fastq
 
 ##############################################
 # cleaning - not yet doing this using make  
