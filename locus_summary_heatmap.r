@@ -7,6 +7,7 @@ get_command_args <- function() {
    if(length(args)!=3 ){
       #quit with error message if wrong number of args supplied
       print('Usage example : Rscript --vanilla  locus_summary_heatmap.r num_profiles=20 moniker="chromosome_freq" datafolder=/dataset/gseq_processing/scratch/gbs/180419_D00390_0357_ACCHG7ANXX/SQ0673.all.PstI-MspI.PstI-MspI/annotation')
+      print('Usage example : Rscript --vanilla  locus_summary_heatmap.r num_profiles=20 moniker="nt_gene_freq" datafolder=/dataset/gseq_processing/scratch/gbs/180824_D00390_0394_BCCPYFANXX_old_KGD/SQ0673.all.PstI-MspI.PstI-MspI/annotation')
       print('args received were : ')
       for (e in args) {
          print(e)

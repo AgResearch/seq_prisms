@@ -6,7 +6,7 @@ import itertools,os,re,argparse,string,sys
 from data_prism import prism, build, from_tab_delimited_file, bin_discrete_value
 
 
-def my_hit_provider(filename, *xargs):
+def my_locus_provider(filename, *xargs):
     """
     transform the tab-delimited stream, to only yield the records that relates either to a hit
     or "no hit" . Note that sometimes this format reports multiple hits to the same target
@@ -58,16 +58,82 @@ seq_21074       CM004590.1      98.438  64      1       0       1       64      
         
         atuple = tuple_stream.next()
 
-def my_top_hit_provider(filename, *xargs):
+
+def my_description_provider(filename, *xargs):
+    """
+    transform the tab-delimited stream, to only yield the records that relates either to a hit
+    or "no hit" . Note that sometimes this format reports multiple hits to the same target
+    - we only want the top hit - this is provided by the next method
+# BLASTN 2.6.0+
+# Query: seq_20382 count=638
+# Database: /bifo/scratch/datacache/ncbi/indexes/blast/capra_hircus_ncbi_PRJNA290100.fasta
+# 0 hits found
+# BLAST processed 1 queries
+# BLASTN 2.6.0+
+# Query: seq_21074 count=204
+# Database: /bifo/scratch/datacache/ncbi/indexes/blast/capra_hircus_ncbi_PRJNA290100.fasta
+# Fields: query acc.ver, subject acc.ver, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
+# 17 hits found
+seq_21074       CM004590.1      100.000 64      0       0       1       64      4028254 4028191 1.14e-25        119
+seq_21074       CM004590.1      100.000 64      0       0       1       64      39689322        39689385        1.14e-25        119
+seq_21074       CM004590.1      98.438  64      1       0       1       64      402829  402892  5.31e-24        113
+seq_21074       CM004590.1      98.438  64      1       0       1       64      3455400 3455337 5.31e-24        113
+
+    """
+    weighting_method = xargs[0]
+    raw_tuple_stream = from_tab_delimited_file(filename,*xargs[1:])   # query, description
+    database=[None]
+    tuple_stream = ((item[0], database[0], item[1]) for item in raw_tuple_stream)
+
+    atuple = tuple_stream.next()
+    query = ""
+    while True:
+        #print "DEBUG1", atuple
+        database_match=re.search("^#\s+Database:\s+(\S+)$",atuple[0].strip())
+        if database_match is not None:
+            database[0] = os.path.splitext( os.path.basename(database_match.groups()[0]) )[0]
+        weight = 1
+        query_match = re.search("^#\s+Query:\s+(.*)$",atuple[0].strip())
+        if query_match is not None:
+            query = query_match.groups()[0]
+        if re.search(" 0 hits",atuple[0],re.IGNORECASE) is not None:
+            if weighting_method == "tag_count":
+                weighting_match = re.search("count=(\d*\.*\d*)\s*$", query)
+                weight = float(weighting_match.groups()[0])
+            yield ((query,database[0],'No hits'),weight)
+        elif atuple[0] == re.split("\s+",query)[0]:
+            if weighting_method == "tag_count":
+                weighting_match = re.search("count=(\d*\.*\d*)\s*$", query)
+                weight = float(weighting_match.groups()[0])
+            #print "DEBUG2", ((query,database[0],atuple[2]), weight)
+            # e.g.
+            #(('seq_91347 count=1.001001', 'nt', 'PREDICTED: Salmo salar uncharacterized LOC106591627 (LOC106591627), ncRNA'), 1.001001)
+            yield ((query,database[0],atuple[2]), weight)
+            
+        else:
+            pass 
+        
+        atuple = tuple_stream.next()
+        
+
+def my_top_locus_provider(filename, *xargs):
     """
     for each file stream  which may contain multiple hits, and yields just the top hit in each group
     """
-    groups = itertools.groupby(my_hit_provider(filename, *xargs), lambda x:x[0][0]) 
+    groups = itertools.groupby(my_locus_provider(filename, *xargs), lambda x:x[0][0]) 
+    top_hits  = (group.next() for (key, group) in groups) 
+    return top_hits
+
+def my_top_description_provider(filename, *xargs):
+    """
+    for each file stream  which may contain multiple hits, and yields just the top hit in each group
+    """
+    groups = itertools.groupby(my_description_provider(filename, *xargs), lambda x:x[0][0]) 
     top_hits  = (group.next() for (key, group) in groups) 
     return top_hits
 
 
-def my_spectrum_value_provider(interval_weight, *xargs):
+def my_locus_spectrum_value_provider(interval_weight, *xargs):
     """
     this takes the items from top hit provider - e.g.
     (('seq_25449', 'filename', 'chrn'), 52)
@@ -76,15 +142,37 @@ def my_spectrum_value_provider(interval_weight, *xargs):
   
     """
     #print interval_weight
-    return ((interval_weight[1],interval_weight[0][1],interval_weight[0][2]),)       
+    return ((interval_weight[1],interval_weight[0][1],interval_weight[0][2]),)
 
-def build_locus_distribution(datafiles, weighting_method = None):
+
+def my_description_spectrum_value_provider(interval_weight, *xargs):
+    """
+    this takes the items from top hit provider - e.g.
+    (('seq_25449', 'filename', 'description'), 52)
+    and transforms to e.g.
+    ((52, 'filename', 'description'),)
+  
+    """
+    #print "DEBUG3", interval_weight
+    return ((interval_weight[1],interval_weight[0][1],interval_weight[0][2]),)
+
+
+def build_locus_distribution(datafiles, weighting_method = None, locus_type="locus"):
     distob = prism(datafiles, 1)
-    distob.file_to_stream_func = my_top_hit_provider
+
     #distob.DEBUG = True
-    distob.file_to_stream_func_xargs = [weighting_method,0,1,8,9] # i.e. pick out first field (query) then hit accession and subject start and end
-    distob.interval_locator_funcs = [bin_discrete_value, bin_discrete_value]
-    distob.spectrum_value_provider_func = my_spectrum_value_provider
+    if locus_type == "locus":
+        distob.file_to_stream_func = my_top_locus_provider
+        distob.file_to_stream_func_xargs = [weighting_method,0,1,8,9] # i.e. pick out first field (query) then hit accession and subject start and end
+        distob.interval_locator_funcs = [bin_discrete_value, bin_discrete_value]
+        distob.spectrum_value_provider_func = my_locus_spectrum_value_provider
+    elif locus_type=="description":
+        distob.file_to_stream_func = my_top_description_provider
+        distob.file_to_stream_func_xargs = [weighting_method,0,8] # i.e. pick out first field (query) then hit accession and subject start and end
+        distob.interval_locator_funcs = [bin_discrete_value, bin_discrete_value]
+        distob.spectrum_value_provider_func = my_description_spectrum_value_provider
+    
+    
     distdata = build(distob,"singlethread")
 
     print "saving distribution to %s.pickle"%os.path.commonprefix(datafiles)
@@ -140,12 +228,12 @@ def get_sample_locus_distribution(sample_locus_summaries, measure,rownames):
         print string.join([str(item) for item in record],"\t")
 
 def debug(options):
-    #test_iter = my_hit_provider(options["filenames"][0], *[None,0,7,6])
-    test_iter = my_top_hit_provider(options["filenames"][0], *["tag_count",0,7,6])
+    #test_iter = my_locus_provider(options["filenames"][0], *[None,0,7,6])
+    test_iter = my_top_locus_provider(options["filenames"][0], *["tag_count",0,7,6])
 
     for item in test_iter:
         print item
-        #print my_spectrum_value_provider(item, *[])
+        #print my_locus_spectrum_value_provider(item, *[])
 
 class outer_list(list):        
     def __getitem__(self, key):
@@ -182,6 +270,8 @@ optionally, the query line can specify a weighting to be used as a count instead
                    choices=["frequency", "information"],help="measure (default: frequency")
     parser.add_argument('--rownames' , dest='rownames', default=False,action='store_true', help="combine genome and locus fields to make a rowname")
     parser.add_argument('--weighting_method' , dest='weighting_method', default=None,choices=["tag_count"],help="weighting method")
+    parser.add_argument('--locus_type' , dest='locus_type', default="locus" ,choices=["locus", "description"],help="locus type")
+
 
 
     args = vars(parser.parse_args())
@@ -192,8 +282,8 @@ optionally, the query line can specify a weighting to be used as a count instead
 def main():
     args=get_options()
 
-    #test = my_top_hit_provider(filename, 0,7,6)
-    #test = my_hit_provider(filename, 0,7,6)
+    #test = my_top_locus_provider(filename, 0,7,6)
+    #test = my_locus_provider(filename, 0,7,6)
     #for record in test:
     #    print record
 
@@ -201,7 +291,7 @@ def main():
     #debug(args)
 
     if args["summary_type"] == "sample_summaries" :
-        locus_dist = build_locus_distribution(args['filenames'], weighting_method = args["weighting_method"])
+        locus_dist = build_locus_distribution(args['filenames'], weighting_method = args["weighting_method"], locus_type=args["locus_type"])
         #write_summaries(filename,locus_dist)
     elif args["summary_type"] == "summary_table" :
         #print "summarising %s"%str(args["filename"])
