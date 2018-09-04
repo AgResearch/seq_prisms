@@ -18,11 +18,11 @@ function get_opts() {
 
    help_text="
 \n
-./kmer_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-p kmeroptions ] [ -a fasta|fastq] -D datadir -O outdir [-C local|slurm ] input_file_names\n
+./kmer_prism.sh  [-h] [-n] [-d] [-s SAMPLE_RATE] [-p kmeroptions ] [ -a fasta|fastq] -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
-kmer_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
+kmer_prism.sh -n -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
 \n
 "
 
