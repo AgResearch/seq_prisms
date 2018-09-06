@@ -255,6 +255,14 @@ example :
  ./locus_prism.py --summary_type summary_table --measure frequency --rownames /dataset/gseq_processing/scratch/gbs/180419_D00390_0357_ACCHG7ANXX/SQ0673.all.PstI-MspI.PstI-MspI/genome_alignment_blast/*.pickle  
  ./locus_prism.py --summary_type summary_table --measure information --rownames /dataset/gseq_processing/scratch/gbs/180419_D00390_0357_ACCHG7ANXX/SQ0673.all.PstI-MspI.PstI-MspI/genome_alignment_blast/*.pickle  
 
+for file in /dataset/gseq_processing/scratch/gbs/180824_D00390_0394_BCCPYFANXX_old_KGD/SQ0673.all.PstI-MspI.PstI-MspI/blast/*.gz;
+   do ./locus_prism.py --weighting_method tag_count --locus_type description $file >> /dataset/gseq_processing/scratch/gbs/180824_D00390_0394_BCCPYFANXX_old_KGD/SQ0673.all.PstI-MspI.PstI-MspI/annotation/nt_gene.summary.txt;
+done
+
+./locus_prism.py --summary_type summary_table --measure frequency --rownames /dataset/gseq_processing/scratch/gbs/180824_D00390_0394_BCCPYFANXX_old_KGD/SQ0673.all.PstI-MspI.PstI-MspI/blast/*.pickle > /dataset/gseq_processing/scratch/gbs/180824_D00390_0394_BCCPYFANXX_old_KGD/SQ0673.all.PstI-MspI.PstI-MspI/annotation/nt_gene_freq.txt
+./locus_prism.py --summary_type summary_table --measure information --rownames /dataset/gseq_processing/scratch/gbs/180824_D00390_0394_BCCPYFANXX_old_KGD/SQ0673.all.PstI-MspI.PstI-MspI/blast/*.pickle > > /dataset/gseq_processing/scratch/gbs/180824_D00390_0394_BCCPYFANXX_old_KGD/SQ0673.all.PstI-MspI.PstI-MspI/annotation/nt_gene_info.txt
+
+
 
 optionally, the query line can specify a weighting to be used as a count instead of 1 - e.g.
 # Query: seq_26674 count=16
