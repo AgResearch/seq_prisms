@@ -189,7 +189,7 @@ cd $OUT_ROOT
 mkdir -p fastq_sample
 # run fastq_sample
 $OUT_ROOT/sample_prism.sh $sample_phrase -a fastq -O $OUT_ROOT/fastq_sample \`cat $OUT_ROOT/file_list.txt\`  > $OUT_ROOT/fastq_sample/fastq_sample.log 2>&1
-if [ $? != 0 ]; then
+if [ \$? != 0 ]; then
    echo \"fastq sample returned an error code\"
    exit 1
 fi
@@ -235,7 +235,7 @@ cd $OUT_ROOT
 mkdir -p bcl2fastq
 # run bcl2fastq
 ulimit -n 4000; bcl2fastq -p 8 --ignore-missing-bcls --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls --auto-set-to-zero-barcode-mismatches --find-adapters-with-sliding-window --adapter-stringency 0.9 --mask-short-adapter-reads 35 --minimum-trimmed-read-length 35 -R $run_dir  --sample-sheet $file  -o $OUT_ROOT/bcl2fastq  -i $in_dir  > $OUT_ROOT/bcl2fastq/bcl2fastq.log 2>&1
-if [ $? != 0 ]; then
+if [ \$? != 0 ]; then
    echo \"bcl2fastq  of $file returned an error code\"
    exit 1
 fi
@@ -253,7 +253,7 @@ cd $OUT_ROOT
 mkdir -p fastqc
 # run fastqc
 tardis --hpctype $HPC_TYPE fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>$OUT_ROOT/fastqc/fastqc.log 2>&1
-if [ $? != 0 ]; then
+if [ \$? != 0 ]; then
    echo \"fastqc  of $file returned an error code\"
    exit 1
 fi
