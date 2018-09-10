@@ -18,11 +18,7 @@
 	$@.sh
 	date > $@
 
-%.kmer_analysis:   %.fasta_sample
-	$@.sh
-	date > $@
-
-%.fasta_sample:  
+%.kmer_analysis:   %.fastq_sample
 	$@.sh
 	date > $@
 

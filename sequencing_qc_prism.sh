@@ -24,7 +24,7 @@ usage :
 examples:
 sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
 sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX/bcl2fastq/*.fastq.gz
+sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX/bcl2fastq/*.fastq.gz
 "
    while getopts ":nhfO:C:r:a:s:M:" opt; do
    case $opt in
@@ -99,7 +99,7 @@ function check_opts() {
       exit 1
    fi
 
-   if [[ ( $ANALYSIS != "all" ) && ( $ANALYSIS != "bcl2fastq" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "taxonomy_analysis" ) ) ]] ; then
+   if [[ ( $ANALYSIS != "all" ) && ( $ANALYSIS != "bcl2fastq" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "taxonomy_analysis" ) && ( $ANALYSIS != "kmer_analysis" ) ) ]] ; then
       echo "analysis must be one of bcl2fastq,fasta_sample,fastq_sample,fastqc,mapping_analysis,kmer_analysis,blast_analysis,taxonomy_analysis,all ) "
       exit 1
    fi
@@ -198,6 +198,21 @@ fi
 
 
 
+   ################  kmer anlaysis 
+   echo $OUT_ROOT/qc.kmer_analysis >> $OUT_ROOT/kmer_analysis_targets.txt
+   echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p kmer_analysis
+# run kmer analysis
+$OUT_ROOT/kmer_prism.sh -a fastq -p \"-k 6\" -O $OUT_ROOT/kmer_analysis \`cat $OUT_ROOT/file_list.txt\` >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
+if [ \$? != 0 ]; then
+   echo \"warning, kmer analysis returned an error code\"
+   exit 1
+fi
+   " >  $OUT_ROOT/qc.kmer_analysis.sh
+   chmod +x $OUT_ROOT/qc.kmer_analysis.sh
+
+
    ################## individual file targets (for these we call anotherapplication)
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
       file=${files_array[$j]}
@@ -260,10 +275,6 @@ fi
       " > $OUT_ROOT/${file_moniker}.fastqc.sh
       chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
    done
-
-
-
-
 }
 
 
