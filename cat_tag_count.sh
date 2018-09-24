@@ -10,6 +10,7 @@
 sample_rate=none
 minimum_sample_size=0
 minimum_tag_count=0
+maximum_tag_count=0
 
 function get_opts() {
 
