@@ -1,4 +1,4 @@
-# taxonomy_prism main makefile
+# annotation_prism main makefile
 #***************************************************************************************
 # references:
 #***************************************************************************************
@@ -8,9 +8,9 @@
 
 
 ##############################################
-# how to make taxonomy spectra
+# how to make annotation spectra
 ##############################################
-%.taxonomy_prism:
+%.annotation_prism:
 	$*.sh
 	date > $@
 	
@@ -19,7 +19,7 @@
 ##############################################
 # specify the intermediate files to keep 
 ##############################################
-.PRECIOUS: %.log %.taxonomy_prism
+.PRECIOUS: %.log %.annotation_prism
 
 ##############################################
 # cleaning - not yet doing this using make  

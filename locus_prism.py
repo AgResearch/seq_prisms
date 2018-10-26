@@ -175,8 +175,8 @@ def build_locus_distribution(datafiles, weighting_method = None, locus_type="loc
     
     distdata = build(distob,"singlethread")
 
-    print "saving distribution to %s.pickle"%os.path.commonprefix(datafiles)
-    distob.save("%s.pickle"%os.path.commonprefix(datafiles))
+    print "saving distribution to %s.locus.pickle"%os.path.commonprefix(datafiles)
+    distob.save("%s.locus.pickle"%os.path.commonprefix(datafiles))
     print """
     seq count %d
     locus count %d
