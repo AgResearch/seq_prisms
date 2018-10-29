@@ -248,9 +248,11 @@ function configure_env() {
    cp ./align_prism.sh $OUT_DIR
    cp ./align_prism.mk $OUT_DIR
    cp ./mapping_stats_plots.r $OUT_DIR
-   cat >$OUT_DIR/tardis.toml <<EOF
+   if [ ! -f $OUT_DIR/tardis.toml ]; then 
+      cat >$OUT_DIR/tardis.toml <<EOF
 max_tasks = $MAX_TASKS
 EOF
+   fi
    cd $OUT_DIR
 #   echo "
 #source activate /dataset/bioinformatics_dev/active/conda-env/biopython
