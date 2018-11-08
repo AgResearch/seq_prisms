@@ -178,7 +178,7 @@ function get_targets() {
       echo $TARGETS $OUT_DIR/${kmerer_moniker}.kmer_prism >> $OUT_DIR/kmer_targets.txt
 
       # generate wrapper
-      kmerer_filename=$OUT_DIR/${kmerer_moniker}.sh
+      kmerer_filename=$OUT_DIR/${kmerer_moniker}.kmer_prism.sh
 
       if [ -f $kmerer_filename ]; then
          if [ ! $FORCE == yes ]; then

@@ -11,7 +11,7 @@
 # how to make annotation spectra
 ##############################################
 %.annotation_prism:
-	$*.sh
+	$@.sh
 	date > $@
 	
 

@@ -295,7 +295,7 @@ function get_targets() {
          reference=${references_array[$i]}
          parameters=`echo ${parameters_array[$i]} | sed 's/"//g'`
 
-         aligner_filename=$OUT_DIR/${alignment_moniker}.sh
+         aligner_filename=$OUT_DIR/${alignment_moniker}.align_prism.sh
 
          if [ -f aligner_filename ]; then
             if [ ! $FORCE == yes ]; then

@@ -10,7 +10,7 @@
 # The commands below 
 ##############################################
 %.align_prism:
-	$*.sh
+	$@*.sh
 	date > $@
 	
 

@@ -195,7 +195,7 @@ function get_targets() {
       echo $OUT_DIR/${sampler_moniker}.sample_prism >> $OUT_DIR/sampling_targets.txt
 
       # generate wrapper
-      sampler_filename=$OUT_DIR/${sampler_moniker}.sh
+      sampler_filename=$OUT_DIR/${sampler_moniker}.sample_prism.sh
 
       if [ -f sampler_filename ]; then
          if [ ! $FORCE == yes ]; then

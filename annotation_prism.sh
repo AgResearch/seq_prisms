@@ -171,7 +171,7 @@ function get_targets() {
       echo $TARGETS $OUT_DIR/${annotation_moniker}.annotation_prism >> $OUT_DIR/annotation_targets.txt
 
       # generate wrapper
-      annotation_filename=$OUT_DIR/${annotation_moniker}.sh
+      annotation_filename=$OUT_DIR/${annotation_moniker}.annotation_prism.sh
 
       if [ -f $annotation_filename ]; then
          if [ ! $FORCE == yes ]; then

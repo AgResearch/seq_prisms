@@ -11,7 +11,7 @@
 # how to make kmer spectra
 ##############################################
 %.kmer_prism:
-	$*.sh
+	$@.sh
 	date > $@
 	
 
