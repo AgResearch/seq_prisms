@@ -192,7 +192,11 @@ function get_targets() {
       fi
       sampler_moniker="${file_base}.${SAMPLER}.${parameters_moniker}"
       sampler_moniker=`echo $sampler_moniker | sed 's/ /space/g' | sed 's/\//\./g' | sed 's/\\\/\./g' | sed 's/\.$//g' `
-      echo $OUT_DIR/${sampler_moniker}.sample_prism >> $OUT_DIR/sampling_targets.txt
+
+
+      if [ $SAMPLER != paired_fastq ]; then
+         echo $OUT_DIR/${sampler_moniker}.sample_prism >> $OUT_DIR/sampling_targets.txt
+      fi
 
       # generate wrapper
       sampler_filename=$OUT_DIR/${sampler_moniker}.sample_prism.sh
@@ -219,8 +223,9 @@ tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_fastq_inp
         elif [ -z $file1 ]; then
            file1=$file2
            file2=$file
+           echo $OUT_DIR/${sampler_moniker}.sample_prism >> $OUT_DIR/sampling_targets.txt
         echo "#!/bin/bash
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_pairedfastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fasta \; cat _condition_pairedfastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fasta 
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase cat _condition_paired_fastq_input_$file1  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_1.fastq \; cat _condition_paired_fastq_input_$file2  \> _condition_text_output_$OUT_DIR/${sampler_moniker}_2.fastq 
          " > $sampler_filename
            file1=""
            file2=""
