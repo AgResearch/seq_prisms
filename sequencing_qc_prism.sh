@@ -198,20 +198,19 @@ fi
 
 
 
-   ################  kmer anlaysis 
+   ################  kmer analysis 
    echo $OUT_ROOT/qc.kmer_analysis >> $OUT_ROOT/kmer_analysis_targets.txt
    echo "#!/bin/bash
 cd $OUT_ROOT
 mkdir -p kmer_analysis
 # run kmer analysis
-$OUT_ROOT/kmer_prism.sh -a fastq -p \"-k 6\" -O $OUT_ROOT/kmer_analysis \`cat $OUT_ROOT/file_list.txt\` >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
+$OUT_ROOT/kmer_prism.sh -a fastq -p \"-k 6\" -O $OUT_ROOT/kmer_analysis $OUT_ROOT/fastq_sample/*.fastq.gz  >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
 if [ \$? != 0 ]; then
    echo \"warning, kmer analysis returned an error code\"
    exit 1
 fi
    " >  $OUT_ROOT/qc.kmer_analysis.sh
    chmod +x $OUT_ROOT/qc.kmer_analysis.sh
-
 
    ################## individual file targets (for these we call anotherapplication)
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
