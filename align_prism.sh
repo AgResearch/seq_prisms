@@ -19,6 +19,7 @@ function get_opts() {
    PARAMETERS=""
    REFERENCES=none
    NUM_REFERENCES=1
+   MEM_PER_CPU=8G
 
 
    help_text="
@@ -32,7 +33,7 @@ bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1
 "
 
    # defaults:
-   while getopts ":nhfO:C:s:m:a:r:p:" opt; do
+   while getopts ":nhfO:C:s:m:a:r:p:B:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -67,6 +68,9 @@ bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1
          ;;
        m)
          MAX_TASKS=$OPTARG
+         ;;
+       B)
+         MEM_PER_CPU=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -248,9 +252,14 @@ function configure_env() {
    cp ./align_prism.sh $OUT_DIR
    cp ./align_prism.mk $OUT_DIR
    cp ./mapping_stats_plots.r $OUT_DIR
+   # if there is not already a tardis config file in the workign folder,
+   # write one to set max tasks and (indirectly) mem per cpu (via also 
+   # configuring a slurm job file , and pointing tardis at that )
    if [ ! -f $OUT_DIR/tardis.toml ]; then 
+      cat $SEQ_PRISMS_BIN/etc/default_slurm_array_job | sed "s/_mem-per-cpu_/${MEM_PER_CPU}/g" - > $OUT_DIR/slurm_array_job
       cat >$OUT_DIR/tardis.toml <<EOF
 max_tasks = $MAX_TASKS
+jobtemplatefile = "$OUT_DIR/slurm_array_job"
 EOF
    fi
    cd $OUT_DIR
@@ -260,8 +269,6 @@ EOF
 #PYTHONPATH=\"$OUT_DIR:$PYTHONPATH\"
 #" > $OUT_DIR/configure_env.sh
 }
-
-
 function check_env() {
    if [ -z "$SEQ_PRISMS_BIN" ]; then
       echo "SEQ_PRISMS_BIN not set - exiting"
