@@ -11,27 +11,27 @@
 	date > $@
 
 %.taxonomy_analysis:   %.blast_analysis
-	$@.sh
+	$@.sh > $@.mk.log 2>&1
 	date > $@
 
 %.blast_analysis:   %.fasta_sample
-	$@.sh
+	$@.sh > $@.mk.log 2>&1
 	date > $@
 
 %.kmer_analysis:   %.fastq_sample
-	$@.sh
+	$@.sh > $@.mk.log 2>&1
 	date > $@
 
 %.fastq_sample:  
-	$@.sh
+	$@.sh > $@.mk.log 2>&1
 	date > $@
 
 %.bcl2fastq:  
-	$@.sh
+	$@.sh > $@.mk.log 2>&1
 	date > $@
 
 %.fastqc:
-	$@.sh
+	$@.sh > $@.mk.log 2>&1
 	date > $@
 
 
@@ -41,7 +41,7 @@
 ##############################################
 # specify the intermediate files to keep 
 ##############################################
-.PRECIOUS: %.log %.all %.taxonomy_analysis %.blast_analysis %.kmer_analysis %.fasta_sample %.fastq_sample %.fastqc %.bcl2fastq
+.PRECIOUS: %.mk.log %.all %.taxonomy_analysis %.blast_analysis %.kmer_analysis %.fasta_sample %.fastq_sample %.fastqc %.bcl2fastq
 
 ##############################################
 # cleaning - not yet doing this using make  
