@@ -26,6 +26,10 @@
 	$@.sh > $@.mk.log 2>&1
 	date > $@
 
+%.fasta_sample:  
+	$@.sh > $@.mk.log 2>&1
+	date > $@
+
 %.bcl2fastq:  
 	$@.sh > $@.mk.log 2>&1
 	date > $@

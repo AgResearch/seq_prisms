@@ -138,8 +138,8 @@ function configure_env() {
    cp taxonomy_prism.mk $OUT_ROOT
    cp sample_prism.sh $OUT_ROOT
    cp sample_prism.mk $OUT_ROOT
-   cp alignment_prism.sh $OUT_ROOT
-   cp alignment_prism.mk $OUT_ROOT
+   cp align_prism.sh $OUT_ROOT
+   cp align_prism.mk $OUT_ROOT
    cp kmer_prism.sh $OUT_ROOT
    cp kmer_prism.mk $OUT_ROOT
    cp data_prism.sh $OUT_ROOT
@@ -197,6 +197,33 @@ fi
    chmod +x $OUT_ROOT/qc.fastq_sample.sh
 
 
+   ###### fasta sample
+   echo $OUT_ROOT/qc.fasta_sample  >> $OUT_ROOT/fasta_sample_targets.txt
+   echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p fasta_sample
+# run fasta_sample
+$OUT_ROOT/sample_prism.sh $sample_phrase -a fasta -O $OUT_ROOT/fasta_sample \`cat $OUT_ROOT/file_list.txt\`  > $OUT_ROOT/fasta_sample/fasta_sample.log 2>&1
+if [ \$? != 0 ]; then
+   echo \"fasta sample returned an error code\"
+   exit 1
+fi
+      " > $OUT_ROOT/qc.fasta_sample.sh
+   chmod +x $OUT_ROOT/qc.fasta_sample.sh
+
+   ###### blast_analysis
+   echo $OUT_ROOT/qc.blast_analysis  >> $OUT_ROOT/blast_analysis_targets.txt
+   echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p blast_analysis
+# run blast
+$OUT_ROOT/align_prism.sh -C $HPC_TYPE -m 60 -a blastn -r nt -p \"-evalue 1.0e-10  -dust \\'20 64 1\\' -max_target_seqs 1 -outfmt \\'7 qseqid sseqid pident evalue staxids sscinames scomnames sskingdoms stitle\\'\" -O $OUT_ROOT/blast_analysis  $OUT_ROOT/fasta_sample/*.fasta.gz
+if [ \$? != 0 ]; then
+   echo \"warning , blast of $OUT_ROOT/fasta_sample/*.fasta returned an error code\"
+   exit 1
+fi
+     " >  $OUT_ROOT/qc.blast_analysis.sh
+   chmod +x $OUT_ROOT/qc.blast_analysis.sh
 
    ################  kmer analysis 
    echo $OUT_ROOT/qc.kmer_analysis >> $OUT_ROOT/kmer_analysis_targets.txt
