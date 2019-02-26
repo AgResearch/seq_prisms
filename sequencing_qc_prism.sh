@@ -20,7 +20,7 @@ function get_opts() {
 
    help_text="
 usage :
-./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|taxonomy_analysis|all] [-s sample rate] -O outdir [file [.. file]] 
+./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|annotation|all] [-s sample rate] -O outdir [file [.. file]] 
 examples:
 sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
 sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
@@ -99,8 +99,8 @@ function check_opts() {
       exit 1
    fi
 
-   if [[ ( $ANALYSIS != "all" ) && ( $ANALYSIS != "bcl2fastq" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "taxonomy_analysis" ) && ( $ANALYSIS != "kmer_analysis" ) ) ]] ; then
-      echo "analysis must be one of bcl2fastq,fasta_sample,fastq_sample,fastqc,mapping_analysis,kmer_analysis,blast_analysis,taxonomy_analysis,all ) "
+   if [[ ( $ANALYSIS != "all" ) && ( $ANALYSIS != "bcl2fastq" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "annotation" ) && ( $ANALYSIS != "kmer_analysis" ) ) ]] ; then
+      echo "analysis must be one of bcl2fastq,fasta_sample,fastq_sample,fastqc,mapping_analysis,kmer_analysis,blast_analysis,annotation,all ) "
       exit 1
    fi
 
@@ -134,8 +134,8 @@ function configure_env() {
    cd $SEQ_PRISMS_BIN
    cp sequencing_qc_prism.sh $OUT_ROOT
    cp sequencing_qc_prism.mk $OUT_ROOT
-   cp taxonomy_prism.sh $OUT_ROOT
-   cp taxonomy_prism.mk $OUT_ROOT
+   cp annotation_prism.sh $OUT_ROOT
+   cp annotation_prism.mk $OUT_ROOT
    cp sample_prism.sh $OUT_ROOT
    cp sample_prism.mk $OUT_ROOT
    cp align_prism.sh $OUT_ROOT
@@ -225,6 +225,27 @@ fi
      " >  $OUT_ROOT/qc.blast_analysis.sh
    chmod +x $OUT_ROOT/qc.blast_analysis.sh
 
+
+   ################ annotation 
+   echo $OUT_ROOT/qc.annotation  >> $OUT_ROOT/annotation_targets.txt
+   echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p annotation
+# summarise species from blast results
+$OUT_ROOT/annotation_prism.sh -C $HPC_TYPE -a taxonomy -O $OUT_ROOT/blast_analysis $OUT_ROOT/blast_analysis/*.results.gz
+return_code1=\$?
+# summarise descriptions from blast results
+rm -f $OUT_ROOT/*.annotation
+$OUT_ROOT/annotation_prism.sh -C $HPC_TYPE -a description -O $OUT_ROOT/blast_analysis $OUT_ROOT/blast_analysis/*.results.gz
+return_code2=\$?
+if [[ ( \$return_code1 != 0 ) || ( \$return_code2 != 0 ) ]]; then
+   echo \"warning, summary of $OUT_ROOT/blast_analysis returned an error code\"
+   exit 1
+fi
+     " >  $OUT_ROOT/qc.annotation.sh
+   chmod +x $OUT_ROOT/qc.annotation.sh
+
+
    ################  kmer analysis 
    echo $OUT_ROOT/qc.kmer_analysis >> $OUT_ROOT/kmer_analysis_targets.txt
    echo "#!/bin/bash
@@ -246,7 +267,7 @@ fi
       file_moniker=$base
 
 
-      #for analysis_type in bcl2fastq all fastqc fastq_sample kmer_analysis blast_analysis fasta_sample taxonomy_analysis fastqc mapping_analysis ; do
+      #for analysis_type in bcl2fastq all fastqc fastq_sample kmer_analysis blast_analysis fasta_sample annotation fastqc mapping_analysis ; do
       for analysis_type in bcl2fastq fastqc ; do
          echo $OUT_ROOT/$file_moniker.$analysis_type  >> $OUT_ROOT/${analysis_type}_targets.txt
          script=$OUT_ROOT/${file_moniker}.${analysis_type}.sh

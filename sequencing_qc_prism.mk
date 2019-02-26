@@ -7,10 +7,10 @@
 #
 
 
-%.all:  %.taxonomy_analysis
+%.all:  %.annotation
 	date > $@
 
-%.taxonomy_analysis:   %.blast_analysis
+%.annotation:   %.blast_analysis
 	$@.sh > $@.mk.log 2>&1
 	date > $@
 
