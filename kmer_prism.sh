@@ -265,15 +265,18 @@ function run_prism() {
       echo "(skipping $OUT_DIR/kmer_frequency.${parameters_moniker}.txt as exists and FORCE=no)"
    fi
 
-   rm -f $OUT_DIR/kmer_summary.txt
-   cp -s $OUT_DIR/kmer_summary.${parameters_moniker}.txt $OUT_DIR/kmer_summary.txt
-   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_bioconductor_env.src Rscript --vanilla $OUT_DIR/kmer_plots.r datafolder=$OUT_DIR >> $OUT_DIR/kmer_prism.log 2>&1
-   mv $OUT_DIR/kmer_entropy.jpg $OUT_DIR/kmer_entropy.${parameters_moniker}.jpg
-   mv $OUT_DIR/kmer_zipfian_comparisons.jpg $OUT_DIR/kmer_zipfian_comparisons.${parameters_moniker}.jpg
-   mv $OUT_DIR/kmer_zipfian.jpg $OUT_DIR/kmer_zipfian.${parameters_moniker}.jpg
-   mv $OUT_DIR/zipfian_distances.jpg $OUT_DIR/zipfian_distances.${parameters_moniker}.jpg
-   mv $OUT_DIR/heatmap_sample_clusters.txt $OUT_DIR/heatmap_sample_clusters.${parameters_moniker}.txt
-   mv $OUT_DIR/zipfian_distances_fit.txt $OUT_DIR/zipfian_distances_fit.${parameters_moniker}.txt
+   # first do plots including N's , then rename and do plots excluding N's 
+   for version in "" "_plus" ; do
+      rm -f $OUT_DIR/kmer_summary.txt
+      cp -s $OUT_DIR/kmer_summary${version}.${parameters_moniker}.txt $OUT_DIR/kmer_summary.txt
+      tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_bioconductor_env.src Rscript --vanilla $OUT_DIR/kmer_plots.r datafolder=$OUT_DIR >> $OUT_DIR/kmer_prism.log 2>&1
+      mv $OUT_DIR/kmer_entropy.jpg $OUT_DIR/kmer_entropy${version}.${parameters_moniker}.jpg
+      mv $OUT_DIR/kmer_zipfian_comparisons.jpg $OUT_DIR/kmer_zipfian_comparisons${version}.${parameters_moniker}.jpg
+      mv $OUT_DIR/kmer_zipfian.jpg $OUT_DIR/kmer_zipfian${version}.${parameters_moniker}.jpg
+      mv $OUT_DIR/zipfian_distances.jpg $OUT_DIR/zipfian_distances${version}.${parameters_moniker}.jpg
+      mv $OUT_DIR/heatmap_sample_clusters.txt $OUT_DIR/heatmap_sample_clusters${version}.${parameters_moniker}.txt
+      mv $OUT_DIR/zipfian_distances_fit.txt $OUT_DIR/zipfian_distances_fit${version}.${parameters_moniker}.txt
+   done
 }
 
 function clean() {
