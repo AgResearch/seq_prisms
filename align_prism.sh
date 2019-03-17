@@ -291,6 +291,7 @@ function get_targets() {
 	 ref_base=`basename ${references_array[$i]}`
          parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g' | sed "s/'//g"  | sed 's/\\\//g' | sed 's/"//g' `
          alignment_moniker=${file_base}.${ALIGNER}.${ref_base}.${parameters_moniker}
+         alignment_moniker=`echo $alignment_moniker | awk '{printf("%s\n", substr($1,1,230));}' -`
          echo $OUT_DIR/${alignment_moniker}.align_prism >> $OUT_DIR/alignment_targets.txt
 
          # generate wrapper

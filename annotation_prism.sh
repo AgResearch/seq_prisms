@@ -168,6 +168,7 @@ function get_targets() {
       parameters_moniker=`echo $ANNOTATION_PARAMETERS | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
       parameters_moniker="a${ANALYSIS_NAME}p${parameters_moniker}w${WEIGHTING_METHOD}"
       annotation_moniker=${file_base}.${parameters_moniker}
+      annotation_moniker=`echo $annotation_moniker | awk '{printf("%s\n", substr($1,1,230));}' -`
       echo $TARGETS $OUT_DIR/${annotation_moniker}.annotation_prism >> $OUT_DIR/annotation_targets.txt
 
       # generate wrapper
