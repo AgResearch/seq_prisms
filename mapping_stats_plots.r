@@ -33,7 +33,7 @@ get_command_args <- function() {
 data_folder<-get_command_args() 
 
 setwd(data_folder) 
-mapping_stats = read.table("bwa_stats_summary.txt", header=TRUE, sep="\t")
+mapping_stats = read.table("stats_summary.txt", header=TRUE, sep="\t")
 mapping_stats <- mapping_stats[order(mapping_stats$map_pct),] 
 
 
