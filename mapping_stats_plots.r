@@ -33,11 +33,11 @@ get_command_args <- function() {
 data_folder<-get_command_args() 
 
 setwd(data_folder) 
-mapping_stats = read.table("stats_summary.txt", header=TRUE, sep="\t")
+mapping_stats = read.table("bwa_stats_summary.txt", header=TRUE, sep="\t")
 mapping_stats <- mapping_stats[order(mapping_stats$map_pct),] 
 
 
-jpeg("mapping_stats.jpg", height=nrow(mapping_stats) *  80, width=800)
+jpeg("mapping_stats.jpg", height=nrow(mapping_stats) *  80, width=900)
 
 
 # ref 
@@ -45,10 +45,14 @@ jpeg("mapping_stats.jpg", height=nrow(mapping_stats) *  80, width=800)
 # http://environmentalcomputing.net/single-continuous-vs-categorical-variables/ 
 # https://stackoverflow.com/questions/13032777/scatter-plot-with-error-bars
 
-op <- par(mar = c(4,20,4,2) + 0.1) # bottom, left, top, and right
-mapping.plot <- barplot(mapping_stats$map_pct, names.arg = mapping_stats$sample, horiz=TRUE,
-                      xlab="Mapping %", ylab = "File",xlim=c(0,100), cex.names = 0.8, las=2)
-par(op)
+margins=par("mar")
+margins[2] = 9 * margins[2]
+par(mar=margins)
+
+#sets the bottom, left, top and right margins respectively of the plot region in number of lines of text.
+
+mapping.plot <- barplot(mapping_stats$map_pct, names.arg = mapping_stats$sample, horiz=TRUE, las=2,
+                      xlab="Mapping %", ylab = "Sample.Reference genome",xlim=c(0,100), cex.names = 0.8)
 
 lower <- mapping_stats$map_pct - mapping_stats$map_std
 upper <- mapping_stats$map_pct + mapping_stats$map_std
