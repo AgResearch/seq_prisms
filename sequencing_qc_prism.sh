@@ -142,8 +142,6 @@ function configure_env() {
    cp align_prism.mk $OUT_ROOT
    cp kmer_prism.sh $OUT_ROOT
    cp kmer_prism.mk $OUT_ROOT
-   cp data_prism.sh $OUT_ROOT
-   cp data_prism.mk $OUT_ROOT
    echo "
 max_tasks=50
 " > $OUT_ROOT/tardis.toml
