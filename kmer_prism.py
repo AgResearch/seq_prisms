@@ -245,7 +245,7 @@ def kmer_count_from_tag_count(tag_count_tuple, *args):
 #********************************************************************
 # general analysis / summary methods 
 #********************************************************************
-def build_kmer_spectrum(datafile, kmer_patterns, sampling_proportion, num_processes, builddir, reverse_complement, pattern_window_length, input_driver_config, input_filetype=None, weighting_method = None):
+def build_kmer_spectrum(datafile, kmer_patterns, sampling_proportion, num_processes, builddir, reverse_complement, pattern_window_length, input_driver_config, input_filetype=None, weighting_method = None, assemble = False, number_to_assemble=100):
 
     if os.path.exists(get_save_filename(datafile, builddir)):
         print("build_kmer_spectrum- skipping %s as already done"%datafile)
@@ -280,21 +280,29 @@ def build_kmer_spectrum(datafile, kmer_patterns, sampling_proportion, num_proces
             spectrum_data = build(kmer_prism, proc_pool_size=num_processes)
             
         kmer_prism.save(get_save_filename(datafile, builddir))
-            
+
         print("spectrum %s has %d points distributed over %d intervals, stored in %d parts"%(get_save_filename(datafile, builddir), kmer_prism.total_spectrum_value, len(spectrum_data), len(kmer_prism.part_dict)))
+
+        if assemble:
+            print("assembling low entropy kmers (lowest %d)..."%number_to_assemble)
+            kmer_list = sorted(kmer_prism.spectrum.items(), lambda x,y:cmp(y[1], x[1]))[0:number_to_assemble]   # sort in descending order and pick the first number_to_assemble
+            # yields e.g. 
+            #[(('CGCCGC',), 26870.0), (('GCGGCG',), 25952.0),....
+            kmer_list = [ item[0][0] for item in kmer_list ]
+            print("(%s)"%str(kmer_list))
+            assemble_kmer_spectrum(kmer_list, datafile, input_filetype, None, weighting_method=weighting_method)
+            
 
     return get_save_filename(datafile, builddir)
 
 
-def assemble_kmer_spectrum(kmer_list_file, sequence_file, sequence_file_type, sampling_proportion, input_driver_config = None,counts_file = None):
-
-    # get the kmer list
-    with open(kmer_list_file , "r") as kmer_stream:
-        kmer_list = [ item.strip() for item in kmer_stream if len(item.strip()) > 0 ]
+def assemble_kmer_spectrum(kmer_list, sequence_file, sequence_file_type, sampling_proportion, input_driver_config = None,counts_file = None, weighting_method=None):
 
     # get an iter of (sequence, count)
     if sequence_file_type is None:
         filetype = get_file_type(sequence_file)
+    else:
+        filetype = sequence_file_type
     file_to_stream_func = seq_from_sequence_file
     file_to_stream_func_xargs = [filetype,sampling_proportion]
     if filetype == ".cnt":
@@ -302,12 +310,15 @@ def assemble_kmer_spectrum(kmer_list_file, sequence_file, sequence_file_type, sa
         file_to_stream_func_xargs = [input_driver_config,sampling_proportion]
         zsequences_counts_stream=file_to_stream_func(sequence_file, *file_to_stream_func_xargs)
     else:
-        if counts_file is None:
-            zsequences_counts_stream = itertools.izip(file_to_stream_func(sequence_file, *file_to_stream_func_xargs), itertools.repeat(1))
-        else:
+        if counts_file is not None:
             with open(counts_file,"r") as counts_stream:
                 counts_iter = (int(item.strip()) for item in counts_stream if len(item.strip()) > 0)
                 zsequences_counts_stream = itertools.izip(file_to_stream_func(sequence_file, *file_to_stream_func_xargs), counts_iter)
+        elif weighting_method == "tag_count":
+            zsequences_counts_stream = itertools.izip(file_to_stream_func(sequence_file, *file_to_stream_func_xargs), itertools.repeat(1))
+            zsequences_counts_stream = ((sequence, parse_weight_from_sequence_description(sequence)) for sequence in zsequences_counts_stream )
+        else:
+            zsequences_counts_stream = itertools.izip(file_to_stream_func(sequence_file, *file_to_stream_func_xargs), itertools.repeat(1))
                 
     #for record in zsequences_counts_stream:
     #    print record
@@ -368,12 +379,14 @@ def assemble_kmer_spectrum(kmer_list_file, sequence_file, sequence_file_type, sa
         assembled_dict[assembly] = count
     
     print("\n\n\n")
+    print("Frequency distribution of kmer counts found in seqs (of kmers to be assembled)")
     for key in sorted(unassembled_dist.keys()):
         print("%s\t%s"%(key, unassembled_dist[key]))
 
     print("\n\n\n")
+    print("Sequences assembled from target kmers and found in the data, sorted by length descending")
     for key in sorted(assembled_dict.keys(),lambda x,y:cmp(len(x),len(y)),None,True):
-        print("%s\t%s"%(key, assembled_dict[key]))
+        print("assembled %s\tcount=\t%s"%(key, assembled_dict[key]))
 
 def use_kmer_prbdf(picklefile):
     kmer_prism = prism.load(picklefile)
@@ -401,9 +414,9 @@ def build_kmer_spectra(options):
     spectrum_names = []
     for file_name in options["file_names"]:
         spectrum_names.append(build_kmer_spectrum(file_name, options["kmer_regexps"], options["sampling_proportion"], \
-                                                          options["num_processes"], options["builddir"], options["reverse_complement"], \
-                                                          options["kmer_size"], options["input_driver_config"], options["input_filetype"], options["weighting_method"]))
-
+                           options["num_processes"], options["builddir"], options["reverse_complement"], \
+                           options["kmer_size"], options["input_driver_config"], options["input_filetype"], \
+                           options["weighting_method"], options["assemble_low_entropy_kmers"]))
     return spectrum_names
 
 
@@ -532,6 +545,8 @@ kmer_prism.py -t entropy -k 6 -p 20  /data/project2/*.fastq.gz /references/ref1.
     parser.add_argument('-s', '--sampling_proportion' , dest='sampling_proportion', default=None, type=float, help="proportion of sequence records to sample (default None means process all records)")
     parser.add_argument('-o', '--output_filename' , dest='output_filename', default="distributions.txt", type=str, help="name of the output file to contain table of kmer distribution summaries for each input file (default 'distributions.txt')")
     parser.add_argument('-c', '--reverse_complement' , dest='reverse_complement', action='store_true', help="for each kmer tabulate the frequency or entropy of its reverse complement (default False)")
+    parser.add_argument('-A', '--assemble_low_entropy_kmers' , dest='assemble_low_entropy_kmers', action='store_true', help="assemble low entropy kmers (default False)")
+    parser.add_argument('-N', '--assemble_highest_n' , dest='assemble_highest_n', default=100, type=int, help="assemble top N kmers (default 50)")
     parser.add_argument('-x', '--input_driver_config' , dest='input_driver_config', default=None, help="this is use to configure input from custom file formats such as tassel count files")    
     parser.add_argument('-a', '--alphabet' , dest='alphabet', default=None, type=str, help="alphabet used to filter kmers when summarising distributions (not applied when building distribution)")
     parser.add_argument('-f', '--input_filetype' , dest='input_filetype', default=None, type=str, choices=["fasta", "fastq"], help="optionally specify input format ( if not specified will try to guess)")
@@ -598,7 +613,11 @@ def main():
         distributions = build_kmer_spectra(options)
         summarise_spectra(distributions, options)   
     else:
-        assemble_kmer_spectrum(options["kmer_listfile"], options["file_names"][0], options["input_filetype"], options["sampling_proportion"], \
+        # get the kmer list
+        with open(options["kmer_listfile"], "r") as kmer_stream:
+            kmer_list = [ item.strip() for item in kmer_stream if len(item.strip()) > 0 ]
+
+        assemble_kmer_spectrum(kmer_list, options["file_names"][0], options["input_filetype"], options["sampling_proportion"], \
                                options["input_driver_config"],options["sequence_countfile"])
 
     return 
