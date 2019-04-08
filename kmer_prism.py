@@ -1,10 +1,12 @@
 #!/usr/bin/env python 
-
+from __future__ import print_function
 import os
+import sys
 import re
 import itertools
 import string
-import exceptions 
+if sys.version_info <= (2, 8):
+   from exceptions import Exception
 from random import random
 from multiprocessing import Pool
 import subprocess
@@ -12,7 +14,7 @@ import argparse
 from data_prism import prism , build, bin_discrete_value, get_text_stream , get_file_type,  PROC_POOL_SIZE
 
 
-class kmer_prism_exception(exceptions.Exception):
+class kmer_prism_exception(Exception):
     def __init__(self,args=None):
         super(kmer_prism_exception, self).__init__(args)
 
@@ -95,10 +97,12 @@ def seq_from_sequence_file(datafile, *args):
     return seq_iter
 
 def parse_weight_from_sequence_description(sequence):
-    # this is used where the fasta file is marked up with a count , and this ends up in the 
-    # description of the seq_record - e.g. where the sequence is from a gbs tag count file
-    # assumed the count is encoded like this in the description
-    # seq_28639 count=1.004008
+    """
+    this is used where the fasta file is marked up with a count , and this ends up in the 
+    description of the seq_record - e.g. where the sequence is from a gbs tag count file
+    assumed the count is encoded like this in the description
+    seq_28639 count=1.004008
+    """
     weighting_match = re.search("count=(\d*\.*\d*)\s*$", sequence.description)
     if weighting_match is not None:
         weight = float(weighting_match.groups()[0])
@@ -147,7 +151,7 @@ cat <$f1
         # if we are to remove a common prefix (e.g. TGCA in the above example), then
         # scan the tags to identify the prefix
         if remove_prefix:
-            print "scanning tags for a common prefix to remove..."
+            print("scanning tags for a common prefix to remove...")
 
             proc = subprocess.Popen(cat_tag_count_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (stdout, stderr) = proc.communicate()
@@ -170,11 +174,11 @@ cat <$f1
 
             if common_prefix_length > 0 :
                 common_prefix = sorted_tuples[0][0:common_prefix_length]
-                print "found common prefix %s - will exclude from analysis"%common_prefix
+                print("found common prefix %s - will exclude from analysis"%common_prefix)
             else:
-                print "(no common prefix found)"
+                print("(no common prefix found)")
 
-        print "summarising tags..."
+        print("summarising tags...")
         proc = subprocess.Popen(cat_tag_count_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()
         if proc.returncode == 0:
@@ -277,7 +281,7 @@ def build_kmer_spectrum(datafile, kmer_patterns, sampling_proportion, num_proces
             
         kmer_prism.save(get_save_filename(datafile, builddir))
             
-        print "spectrum %s has %d points distributed over %d intervals, stored in %d parts"%(get_save_filename(datafile, builddir), kmer_prism.total_spectrum_value, len(spectrum_data), len(kmer_prism.part_dict))
+        print("spectrum %s has %d points distributed over %d intervals, stored in %d parts"%(get_save_filename(datafile, builddir), kmer_prism.total_spectrum_value, len(spectrum_data), len(kmer_prism.part_dict)))
 
     return get_save_filename(datafile, builddir)
 
@@ -363,19 +367,19 @@ def assemble_kmer_spectrum(kmer_list_file, sequence_file, sequence_file_type, sa
             assembly = reduce(lambda x,y:x+y[-1],kmer_tuple[1:],kmer_tuple[0])
         assembled_dict[assembly] = count
     
-    print "\n\n\n"
+    print("\n\n\n")
     for key in sorted(unassembled_dist.keys()):
-        print "%s\t%s"%(key, unassembled_dist[key])
+        print("%s\t%s"%(key, unassembled_dist[key]))
 
-    print "\n\n\n"        
+    print("\n\n\n")
     for key in sorted(assembled_dict.keys(),lambda x,y:cmp(len(x),len(y)),None,True):
-        print "%s\t%s"%(key, assembled_dict[key])
+        print("%s\t%s"%(key, assembled_dict[key]))
 
 def use_kmer_prbdf(picklefile):
     kmer_prism = prism.load(picklefile)
     spectrum_data = kmer_prism.get_distribution()
     for (interval, freq) in spectrum_data.items():
-        print interval, freq
+        print(interval, freq)
 
 def get_save_filename(input_filename, builddir):
     sanitised_input_filename = re.sub("[\s\$]","_", input_filename)
@@ -413,12 +417,12 @@ def summarise_spectra(distributions, options):
 
     if options["alphabet"] is not None:
         kmer_intervals1 = [ interval for interval in kmer_intervals if re.search("^[%(alphabet)s]+$"%options , interval[0], re.IGNORECASE) is not None ]
-        print "(restricting kmers to those from alphabet %s , deleted %d / %d kmers)"%(options["alphabet"],len(kmer_intervals) - len(kmer_intervals1) , len(kmer_intervals))
+        print("(restricting kmers to those from alphabet %s , deleted %d / %d kmers)"%(options["alphabet"],len(kmer_intervals) - len(kmer_intervals1) , len(kmer_intervals)))
         kmer_intervals  = kmer_intervals1
         
 
     #print "summarising %s , %s across %s"%(measure, str(kmer_intervals), str(distributions))
-    print "summarising %s , %d kmers across %s"%(measure, len(kmer_intervals), str(distributions))
+    print("summarising %s , %d kmers across %s"%(measure, len(kmer_intervals), str(distributions)))
 
 
     sample_measures = prism.get_projections(distributions, kmer_intervals, measure, False, options["num_processes"])
@@ -432,7 +436,7 @@ def summarise_spectra(distributions, options):
     if options["summary_type"] in ["entropy", "frequency"]:
         zsample_measures_with_rownames = itertools.izip(interval_name_iter, zsample_measures)
         for interval_measure in zsample_measures_with_rownames:
-            print >> outfile, "%s\t%s"%("%s"%interval_measure[0], string.join((str(item) for item in interval_measure[1]),"\t"))
+            print("%s\t%s"%("%s"%interval_measure[0], string.join((str(item) for item in interval_measure[1]),"\t")), file=outfile)
         outfile.close()
     elif options["summary_type"] in ["ranks", "zipfian"]:
         # duplicate interval_name_iter - needed 3 times
@@ -447,22 +451,22 @@ def summarise_spectra(distributions, options):
         ranks_with_rownames = itertools.izip(interval_name_iter_dup[0], ranks_dup[0])
 
         # output ranks
-        print >> outfile , "*** ranks *** :"
+        print("*** ranks *** :", file=outfile)
         for interval_rank in ranks_with_rownames:
-            print >> outfile, "%s\t%s"%("%s"%interval_rank[0], string.join((str(item) for item in interval_rank[1]),"\t"))
+            print("%s\t%s"%("%s"%interval_rank[0], string.join((str(item) for item in interval_rank[1]),"\t")), file=outfile)
 
         # output measures
-        print >> outfile , "*** entropies *** :"
+        print("*** entropies *** :", file=outfile)
         zsample_measures_with_rownames = itertools.izip(interval_name_iter_dup[1], zsample_measures_dup[1])
         for interval_measure in zsample_measures_with_rownames:
-            print >> outfile, "%s\t%s"%("%s"%interval_measure[0], string.join((str(item) for item in interval_measure[1]),"\t"))
+            print("%s\t%s"%("%s"%interval_measure[0], string.join((str(item) for item in interval_measure[1]),"\t")), file=outfile)
 
         # get distances
-        print >> outfile , "*** distances *** :"
+        print("*** distances *** :", file=outfile)
         (distance_matrix, point_names_sorted) = prism.get_zipfian_distance_matrix(zsample_measures_dup[2], ranks_dup[1])
         prism.print_distance_matrix(distance_matrix, point_names_sorted, outfile)
     else:
-        print "warning, unknown summary type %(summary_type)s, no summary available"%options
+        print("warning, unknown summary type %(summary_type)s, no summary available"%options)
         
         
         outfile.close()
@@ -577,14 +581,14 @@ def test(options):
         filetype = get_file_type(file_name)
         seq_iter = SeqIO.parse(get_text_stream(file_name), filetype)
         for seq in seq_iter:
-            print seq.description
+            print(seq.description)
         
 
 
 def main():
 
     options = get_options()
-    print options
+    print(options)
 
     if options["summary_type"] == "test":
         test(options)
