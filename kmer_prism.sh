@@ -198,7 +198,7 @@ tardis -q --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase --shell-include-file 
 rm $OUT_DIR/${file_base}.frequency.txt
 " > $kmerer_filename 
         fi
-	echo "tardis --hpctype $HPC_TYPE -d  $OUT_DIR  --shell-include-file configure_biopython_env.src kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.${parameters_moniker}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+	echo "tardis --hpctype $HPC_TYPE -d  $OUT_DIR  --shell-include-file configure_biopython_env.src kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.${parameters_moniker}.1   \> _condition_uncompressedtext_output_$OUT_DIR/${kmerer_moniker}.log
         if [ \$? == 0 ]; then
            rm $OUT_DIR/${file_base}.${parameters_moniker}.1
            rm $OUT_DIR/${file_base}.frequency.txt
@@ -207,7 +207,7 @@ rm $OUT_DIR/${file_base}.frequency.txt
       elif [ $KMERER == fastq ]; then
          echo "#!/bin/bash
 	tardis -q --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase --shell-include-file configure_biopython_env.src cat  _condition_fastq2fasta_input_$file  \> _condition_uncompressedtext_output_$OUT_DIR/${file_base}.${parameters_moniker}.1
-	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  --shell-include-file configure_biopython_env.src kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.${parameters_moniker}.1   \> _condition_text_output_$OUT_DIR/${kmerer_moniker}.log
+	tardis --hpctype $HPC_TYPE -d  $OUT_DIR  --shell-include-file configure_biopython_env.src kmer_prism.py -f fasta $KMER_PARAMETERS -o $OUT_DIR/${file_base}.frequency.txt  $OUT_DIR/${file_base}.${parameters_moniker}.1   \> _condition_uncompressedtext_output_$OUT_DIR/${kmerer_moniker}.log
         if [ \$? == 0 ]; then
            rm $OUT_DIR/${file_base}.${kmerer_moniker}.1
            rm $OUT_DIR/${file_base}.frequency.txt
