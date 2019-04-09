@@ -358,13 +358,19 @@ def assemble_kmer_spectrum(kmer_list, sequence_file, sequence_file_type, samplin
         if len(supporting_runs) > 0:
             supporting_runs = sorted(supporting_runs, lambda a,b:cmp(len(a), len(b)), None, True)
             best_supporting_run = tuple(supporting_runs[0])
+
+            # store the supporting run in a dict with run as key, value the number of seqs with that run
             unassembled_dict[best_supporting_run] = sequence_count + unassembled_dict.setdefault(best_supporting_run,0)
 
-    # summarise the length distribution of supporting kmer runs 
+    # summarise the frequency distribution of the lengths of supporting kmer runs (redundant length)
     unassembled_dist = {}
     for (kmer_tuple, count) in unassembled_dict.items():
         unassembled_dist[len(kmer_tuple)] = count + unassembled_dist.setdefault(len(kmer_tuple),0)
 
+    # summarise the frequency distribution of the non-redundant lengths of supporting kmer runs
+    unassembled_dist_nr = {}
+    for (kmer_tuple, count) in unassembled_dict.items():
+        unassembled_dist_nr[len(set(kmer_tuple))] = count + unassembled_dist.setdefault(len(set(kmer_tuple)),0)
     
 
     # assemble each of the runs 
@@ -376,7 +382,9 @@ def assemble_kmer_spectrum(kmer_list, sequence_file, sequence_file_type, samplin
             assembly = kmer_tuple[0]
         else:
             assembly = reduce(lambda x,y:x+y[-1],kmer_tuple[1:],kmer_tuple[0])
-        assembled_dict[assembly] = count
+
+        # for each assembled run , store the count of seqs exhibiting the run, and also the non-redundant length of the run that was assembled
+        assembled_dict[assembly] = ( count , len(set(kmer_tuple)) )
     
     print("\n\n\n")
     print("Frequency distribution of kmer counts found in seqs (of kmers to be assembled)")
@@ -384,9 +392,31 @@ def assemble_kmer_spectrum(kmer_list, sequence_file, sequence_file_type, samplin
         print("%s\t%s"%(key, unassembled_dist[key]))
 
     print("\n\n\n")
-    print("Sequences assembled from target kmers and found in the data, sorted by length descending")
+    print("Frequency distribution of distinct kmer counts found in seqs (of kmers to be assembled)")
+    for key in sorted(unassembled_dist_nr.keys()):
+        print("%s\t%s"%(key, unassembled_dist_nr[key]))
+
+    print("\n\n\n")
+    print("Sequences assembled from target kmers and found in the data, sorted by length descending, reporting count of containing seqs, and distinct kmer count")
     for key in sorted(assembled_dict.keys(),lambda x,y:cmp(len(x),len(y)),None,True):
-        print("assembled %s\tcount=\t%s"%(key, assembled_dict[key]))
+        print("assembled_by_length\t%s\tcounts=\t%s"%(key, assembled_dict[key]))
+
+    def cmp_length_and_distinct_kmers(s1, s2):
+        """
+        sort first by distinct kmer counts, then by length, both descending
+        """
+        if assembled_dict[s1][1] == assembled_dict[s2][1]:
+            return cmp(len(s2),len(s1))
+        else:
+            return cmp(assembled_dict[s2][1] , assembled_dict[s1][1])
+
+    
+
+    print("\n\n\n")
+    print("Sequences assembled from target kmers and found in the data, sorted by distinct kmers in seq, and length , descending")
+    for key in sorted(assembled_dict.keys(),cmp_length_and_distinct_kmers):
+        print("assembled_by_distinct\t%s\tcounts=\t%s"%(key, assembled_dict[key]))
+
 
 def use_kmer_prbdf(picklefile):
     kmer_prism = prism.load(picklefile)
