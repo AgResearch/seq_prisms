@@ -398,8 +398,14 @@ def assemble_kmer_spectrum(kmer_list, sequence_file, sequence_file_type, samplin
 
     print("\n\n\n")
     print("Sequences assembled from target kmers and found in the data, sorted by length descending, reporting count of containing seqs, and distinct kmer count")
+    container = None
     for key in sorted(assembled_dict.keys(),lambda x,y:cmp(len(x),len(y)),None,True):
-        print("assembled_by_length\t%s\tcounts=\t%s"%(key, assembled_dict[key]))
+        if container is None:
+            container = key
+        elif container.find(key) < 0:
+            container = key
+
+        print("assembled_by_length\t%s\tcontained_in\t%s\tcounts=\t%s"%(key, container, assembled_dict[key]))
 
     def cmp_length_and_distinct_kmers(s1, s2):
         """
@@ -410,12 +416,16 @@ def assemble_kmer_spectrum(kmer_list, sequence_file, sequence_file_type, samplin
         else:
             return cmp(assembled_dict[s2][1] , assembled_dict[s1][1])
 
-    
-
     print("\n\n\n")
-    print("Sequences assembled from target kmers and found in the data, sorted by distinct kmers in seq, and length , descending")
+    print("Sequences assembled from target kmers and found in the data, sorted by count of distinct kmers in seq, and length , descending")
+    container = None
     for key in sorted(assembled_dict.keys(),cmp_length_and_distinct_kmers):
-        print("assembled_by_distinct\t%s\tcounts=\t%s"%(key, assembled_dict[key]))
+        if container is None:
+            container = key
+        elif container.find(key) < 0:
+            container = key
+
+        print("assembled_by_distinct\t%s\tcontained_in\t%s\tcounts=\t%s"%(key, container, assembled_dict[key]))
 
 
 def use_kmer_prbdf(picklefile):
