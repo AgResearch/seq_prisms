@@ -250,7 +250,7 @@ fi
 cd $OUT_ROOT
 mkdir -p kmer_analysis
 # run kmer analysis
-$OUT_ROOT/kmer_prism.sh -a fastq -p \"-k 6\" -O $OUT_ROOT/kmer_analysis $OUT_ROOT/fastq_sample/*.fastq.gz  >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
+$OUT_ROOT/kmer_prism.sh -a fastq -p \"-k 6 -A\" -O $OUT_ROOT/kmer_analysis $OUT_ROOT/fastq_sample/*.fastq.gz  >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
 if [ \$? != 0 ]; then
    echo \"warning, kmer analysis returned an error code\"
    exit 1
