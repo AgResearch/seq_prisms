@@ -17,6 +17,7 @@ function get_opts() {
    ANALYSIS=all
    MINIMUM_SAMPLE_SIZE="0"
    SAMPLE_RATE=""
+   BCL2FASTQOPTS=""
 
    help_text="
 usage :
@@ -24,9 +25,10 @@ usage :
 examples:
 sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
 sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -n -a bcl2fastq -B "--ignore-missing-bcls"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
 sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX/bcl2fastq/*.fastq.gz
 "
-   while getopts ":nhfO:C:r:a:s:M:" opt; do
+   while getopts ":nhfO:C:r:a:s:M:B:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -43,6 +45,9 @@ sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_pro
          ;;
        s)
          SAMPLE_RATE=$OPTARG
+         ;;
+       B)
+         BCL2FASTQOPTS=$OPTARG
          ;;
        M)
          MINIMUM_SAMPLE_SIZE=$OPTARG
@@ -294,7 +299,7 @@ fi
 cd $OUT_ROOT
 mkdir -p bcl2fastq
 # run bcl2fastq
-ulimit -n 4000; /usr/local/bin/bcl2fastq -p 8 --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls --auto-set-to-zero-barcode-mismatches --find-adapters-with-sliding-window --adapter-stringency 0.9 --mask-short-adapter-reads 35 --minimum-trimmed-read-length 35 -R $run_dir  --sample-sheet $file  -o $OUT_ROOT/bcl2fastq  -i $in_dir  > $OUT_ROOT/bcl2fastq/bcl2fastq.log 2>&1
+ulimit -n 4000; /usr/local/bin/bcl2fastq -p 8 $BCL2FASTQOPTS  --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls --auto-set-to-zero-barcode-mismatches --find-adapters-with-sliding-window --adapter-stringency 0.9 --mask-short-adapter-reads 35 --minimum-trimmed-read-length 35 -R $run_dir  --sample-sheet $file  -o $OUT_ROOT/bcl2fastq  -i $in_dir  > $OUT_ROOT/bcl2fastq/bcl2fastq.log 2>&1
 if [ \$? != 0 ]; then
    echo \"bcl2fastq  of $file returned an error code\"
    exit 1
