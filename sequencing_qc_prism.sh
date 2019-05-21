@@ -184,7 +184,15 @@ function get_targets() {
       file=${files_array[$j]}
       echo $file >> $OUT_ROOT/file_list.txt
    done
-   
+
+   ###### "all"
+   echo $OUT_ROOT/qc.all  >> $OUT_ROOT/all_targets.txt
+   echo "#!/bin/bash
+# maybe do some checks here
+   exit 0
+      " > $OUT_ROOT/qc.all.sh
+   chmod +x $OUT_ROOT/qc.all.sh
+
    ###### fastq sample 
    echo $OUT_ROOT/qc.fastq_sample  >> $OUT_ROOT/fastq_sample_targets.txt
    echo "#!/bin/bash

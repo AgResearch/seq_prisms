@@ -6,8 +6,11 @@
 #     http://www.gnu.org/software/make/manual/make.html
 #
 
-
-%.all:  %.annotation
+# (fastq is not included as part of all , because fastqc has file moniker as prefix, whereas 
+# the others have a fixed prefix, and a file-of-file names is used by the script to find the
+# files. This is not idea - all should use the file-of-filenames approach).
+# 
+%.all:  %.annotation %.kmer_analysis
 	date > $@
 
 %.annotation:   %.blast_analysis
