@@ -235,35 +235,17 @@ function run_prism() {
    make -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    # this uses the pickled distributions to make the final spectra
    # (note that the -k 6 arg here is not actually used , as the distributions have already been done by the make step)
-   if [[ ( ! -f $OUT_DIR/kmer_summary_plus.${parameters_moniker}.txt ) || ( $FORCE == "yes" ) ]]; then 
-      rm -f $OUT_DIR/kmer_summary_plus.${parameters_moniker}.txt
-      tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
-   else
-      echo "(skipping $OUT_DIR/kmer_summary_plus.${parameters_moniker}.txt as exists and FORCE=no)"
-   fi
+   rm -f $OUT_DIR/kmer_summary_plus.${parameters_moniker}.txt
+   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t zipfian -o $OUT_DIR/kmer_summary_plus.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
 
-   if [[ ( ! -f $OUT_DIR/kmer_frequency_plus.${parameters_moniker}.txt ) || ( $FORCE == "yes" ) ]]; then 
-      rm -f $OUT_DIR/kmer_frequency_plus.${parameters_moniker}.txt
-      tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
-   else
-      echo "(skipping $OUT_DIR/kmer_frequency_plus.${parameters_moniker}.txt as exists and FORCE=no)"
-   fi
-
+   rm -f $OUT_DIR/kmer_frequency_plus.${parameters_moniker}.txt
+   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -t frequency -o $OUT_DIR/kmer_frequency_plus.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
    
-   if [[ ( ! -f $OUT_DIR/kmer_summary.${parameters_moniker}.txt ) || ( $FORCE == "yes" ) ]]; then 
-      rm -f $OUT_DIR/kmer_summary.${parameters_moniker}.txt
-      tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t zipfian -o $OUT_DIR/kmer_summary.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
-   else
-      echo "(skipping $OUT_DIR/kmer_summary.${parameters_moniker}.txt as exists and FORCE=no)"
-   fi
+   rm -f $OUT_DIR/kmer_summary.${parameters_moniker}.txt
+   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t zipfian -o $OUT_DIR/kmer_summary.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
 
-
-   if [[ ( ! -f $OUT_DIR/kmer_frequency.${parameters_moniker}.txt ) || ( $FORCE == "yes" ) ]]; then 
-      rm -f  $OUT_DIR/kmer_frequency.${parameters_moniker}.txt
-      tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t frequency -o $OUT_DIR/kmer_frequency.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
-   else
-      echo "(skipping $OUT_DIR/kmer_frequency.${parameters_moniker}.txt as exists and FORCE=no)"
-   fi
+   rm -f  $OUT_DIR/kmer_frequency.${parameters_moniker}.txt
+   tardis.py --hpctype $HPC_TYPE -d $OUT_DIR --shell-include-file configure_biopython_env.src kmer_prism.py -k 6 -a CGAT -t frequency -o $OUT_DIR/kmer_frequency.${parameters_moniker}.txt -b $OUT_DIR $SUMMARY_TARGETS >> $OUT_DIR/kmer_prism.log 2>&1
 
    # first do plots including N's , then rename and do plots excluding N's 
    for version in "" "_plus" ; do
