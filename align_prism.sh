@@ -354,7 +354,7 @@ function html_prism() {
 }
 
 function clean() {
-   rm -rf $OUT_DIR/tardis_*
+   nohup rm -rf $OUT_DIR/tardis_*  > $OUT_DIR/align_clean.log 2>&1  &
 }
 
 function main() {

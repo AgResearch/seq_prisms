@@ -348,9 +348,8 @@ function html_prism() {
 }
 
 function clean() {
-   echo "skipping clean for now"
-   #rm -rf $OUT_ROOT/tardis_*
-   #rm $OUT_ROOT/*.fastq
+   nohup rm -rf $OUT_DIR/tardis_* > $OUT_DIR/sequenceing_clean.log 2>&1 &
+   rm $OUT_ROOT/*.fastq
 }
 
 

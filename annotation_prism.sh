@@ -226,7 +226,7 @@ function run_prism() {
 }
 
 function clean() {
-   rm -rf $OUT_DIR/tardis_*
+   nohup rm -rf $OUT_DIR/tardis_* > $OUT_DIR/annotation_clean.log 2>&1 &
 }
 
 
