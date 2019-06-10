@@ -184,7 +184,15 @@ function get_targets() {
       file=${files_array[$j]}
       echo $file >> $OUT_ROOT/file_list.txt
    done
-   
+
+   ###### "all"
+   echo $OUT_ROOT/qc.all  >> $OUT_ROOT/all_targets.txt
+   echo "#!/bin/bash
+# maybe do some checks here
+   exit 0
+      " > $OUT_ROOT/qc.all.sh
+   chmod +x $OUT_ROOT/qc.all.sh
+
    ###### fastq sample 
    echo $OUT_ROOT/qc.fastq_sample  >> $OUT_ROOT/fastq_sample_targets.txt
    echo "#!/bin/bash
@@ -256,6 +264,13 @@ cd $OUT_ROOT
 mkdir -p kmer_analysis
 # run kmer analysis
 $OUT_ROOT/kmer_prism.sh -a fastq -p \"-k 6 -A\" -O $OUT_ROOT/kmer_analysis $OUT_ROOT/fastq_sample/*.fastq.gz  >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
+# summarise common sequence 
+rm -f $OUT_ROOT/kmer_analysis/common_sequence_summary.txt
+for file in $OUT_ROOT/kmer_analysis/*.fastq.k6A.log; do  
+   echo \"\$file :\" >> $OUT_ROOT/kmer_analysis/common_sequence_summary.txt
+   grep -A 20 \"count of distinct kmers\" \$file  >> $OUT_ROOT/kmer_analysis/common_sequence_summary.txt
+   echo \" \" >> $OUT_ROOT/kmer_analysis/common_sequence_summary.txt
+done 
 if [ \$? != 0 ]; then
    echo \"warning, kmer analysis returned an error code\"
    exit 1
