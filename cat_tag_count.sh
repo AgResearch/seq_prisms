@@ -27,10 +27,10 @@ help_text="
  cat_tag_count.sh -O fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
  # produce a sampled redundant fasta listing of tags (i.e. each is listed as a sequence N times, N its tag count) \n
- cat_tag_count.sh -O -s .001 fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ cat_tag_count.sh -O fasta -s .001 /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
  # produce a sampled redundant fasta listing of tags (i.e. each is listed as a sequence N times, N its tag count) - but specify a ninimum sample size\n
- cat_tag_count.sh -O -s .001 -M 10000 fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ cat_tag_count.sh -O fasta -s .001 -M 10000 /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
  # produce a non-redundant fasta listing of tags (i.e. each is listed as a sequence once) \n
  cat_tag_count.sh -u -O fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
@@ -192,40 +192,36 @@ if [ ! -p $fifo ]; then
    exit 1
 fi
 
+#start background process to read fifo 
+if [ $FORMAT == "text" ]; then
+   if [ -z "$sample_phrase" ]; then
+      cat <$fifo  &
+   else
+      cat <$fifo | $SEQ_PRISMS_BIN/tags_to_tags.py $sample_phrasea  &
+   fi
+elif [ $FORMAT == "count" ]; then
+   awk '{ if(NF == 3) {sum += $3} } END { print sum }' $fifo  &
+elif [ $FORMAT == "fasta" ]; then
+   if [ $unique == "no" ]; then
+      cat <$fifo | $SEQ_PRISMS_BIN/tags_to_fasta.py $sample_phrase  & 
+   else
+      cat <$fifo | $SEQ_PRISMS_BIN/tags_to_fasta.py -u $sample_phrase  &
+   fi
+fi
 
-#load tassel3
-#module load tassel/3 assume loaded by the calling environment. We should really
-#check that we have tassel available
 
-#start tassel process to write text to fifo, running in background
+#start tassel process to write text to fifo, running in foreground
 echo "running nohup run_pipeline.pl -fork1 -BinaryToTextPlugin  -i \"$infile\" -o $fifo -t TagCounts -endPlugin -runfork1" >>$errfile 2>&1
-nohup run_pipeline.pl -fork1 -BinaryToTextPlugin  -i "$infile" -o $fifo -t TagCounts -endPlugin -runfork1 >>$errfile 2>&1 &
+run_pipeline.pl -fork1 -BinaryToTextPlugin  -i "$infile" -o $fifo -t TagCounts -endPlugin -runfork1 >>$errfile 2>&1 
 
 #test if this command worked  (after waiting reasonable time for background to start)
 sleep 3
-grep -q "failed to run command" $errfile > /dev/null 2>&1
+grep -q "run_pipeline.pl: command not found" $errfile > /dev/null 2>&1
 if [ $? == 0 ]; then
    echo "looks like we could not run tassel - please ensure you have a tassel environment (e.g. run_pipeline.pl should be on the PATH)"
    exit 1
 fi
 
-#start process to read fifo and list to stdout
- 
-if [ $FORMAT == "text" ]; then
-   if [ -z "$sample_phrase" ]; then
-      cat <$fifo
-   else
-      cat <$fifo | $SEQ_PRISMS_BIN/tags_to_tags.py $sample_phrase
-   fi
-elif [ $FORMAT == "count" ]; then
-   awk '{ if(NF == 3) {sum += $3} } END { print sum }' $fifo
-elif [ $FORMAT == "fasta" ]; then
-   if [ $unique == "no" ]; then
-      cat <$fifo | $SEQ_PRISMS_BIN/tags_to_fasta.py $sample_phrase 
-   else
-      cat <$fifo | $SEQ_PRISMS_BIN/tags_to_fasta.py -u $sample_phrase
-   fi
-fi
 
 # clean up
 rm -f $fifo
