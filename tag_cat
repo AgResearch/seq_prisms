@@ -1,0 +1,5 @@
+#!/bin/sh
+export SEQ_PRISMS_BIN=/dataset/gseq_processing/active/bin/gbs_prism/seq_prisms
+source /stash/miniconda3/etc/profile.d/conda.sh
+conda activate tassel3
+$SEQ_PRISMS_BIN/cat_tag_count.sh "$@"

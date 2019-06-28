@@ -15,11 +15,12 @@ maximum_tag_count=0
 function get_opts() {
 
 help_text="
- wrapper to tassel function, to cat a tag count file to stdout
- 
- (stdout / stderr of the process itself is written to /tmp/*.cat_tag_count_stderr)
- 
+ wrapper to tassel function, to cat a tag count file to stdout, with options for sampling , fasta format and grand total of counts\n
+\n 
+ (stdout / stderr of the process itself is written to /tmp/*.cat_tag_count_stderr)\n
+\n
  examples : \n
+ (note if you are running the tag_cat wrapper, substitute tag_cat for cat_tag_count.sh below) \n
  # just list the raw text tag file \n
  cat_tag_count.sh /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
