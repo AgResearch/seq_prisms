@@ -20,11 +20,12 @@ function get_opts() {
    REFERENCES=none
    NUM_REFERENCES=1
    MEM_PER_CPU=8G
+   NUM_THREADS=16
 
 
    help_text="
 \n
-./align_prism.sh  [-h] [-n] [-d] [-f] [-s SAMPLE_RATE] -a aligner -r [ref name | file of ref names ] -p [ parameters or file of parameters ] -O outdir [-C local|slurm ] input_file_names\n
+./align_prism.sh  [-h] [-n] [-d] [-f] [-j num_threads] [-s SAMPLE_RATE] -a aligner -r [ref name | file of ref names ] -p [ parameters or file of parameters ] -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
@@ -33,7 +34,7 @@ bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1
 "
 
    # defaults:
-   while getopts ":nhfO:C:s:m:a:r:p:B:" opt; do
+   while getopts ":nhfO:C:s:m:a:r:p:B:j:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -71,6 +72,9 @@ bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1
          ;;
        B)
          MEM_PER_CPU=$OPTARG
+         ;;
+       j)
+         NUM_THREADS=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -232,6 +236,7 @@ function echo_opts() {
   echo HPC_TYPE=$HPC_TYPE
   echo FILES=${files_array[*]}
   echo SAMPLE_RATE=$SAMPLE_RATE
+  echo NUM_THREADS=$NUM_THREADS
   echo ALIGNER=$ALIGNER
   echo REFEREENCES
   for ((i=0;$i<$NUM_REFERENCES;i=$i+1)) do
@@ -337,7 +342,7 @@ tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -q
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f align_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/alignment_targets.txt` > $OUT_DIR/align_prism.log 2>&1
+   make -n -f align_prism.mk -d -k  --no-builtin-rules -j $NUM_THREADS `cat $OUT_DIR/alignment_targets.txt` > $OUT_DIR/align_prism.log 2>&1
    echo "dry run : summary commands are 
    TBA - probably another make
    "
@@ -345,7 +350,7 @@ function fake_prism() {
 }
 
 function run_prism() {
-   make -f align_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/alignment_targets.txt` > $OUT_DIR/align_prism.log 2>&1
+   make -f align_prism.mk -d -k  --no-builtin-rules -j $NUM_THREADS `cat $OUT_DIR/alignment_targets.txt` > $OUT_DIR/align_prism.log 2>&1
    # will call another make to do summaries
 }
 

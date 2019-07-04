@@ -14,6 +14,7 @@ function get_opts() {
    MINIMUM_SAMPLE_SIZE=0
    KMERER=fasta
    FORCE=no
+   NUM_THREADS=16
 
 
    help_text="
@@ -27,7 +28,7 @@ kmer_prism.sh -n -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset
 "
 
    # defaults:
-   while getopts ":nhfO:C:s:M:p:a:" opt; do
+   while getopts ":nhfO:C:s:M:p:a:j:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -59,6 +60,9 @@ kmer_prism.sh -n -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset
          ;;
        a)
          KMERER=$OPTARG
+         ;;
+       j)
+         NUM_THREADS=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -116,6 +120,7 @@ function echo_opts() {
   echo KMERER=$KMERER
   echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
   echo KMER_PARAMETERS=$KMER_PARAMETERS 
+  echo NUM_THREADS=$NUM_THREADS
 
 }
 
@@ -224,7 +229,7 @@ rm $OUT_DIR/${file_base}.frequency.txt
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
+   make -n -f kmer_prism.mk -d -k  --no-builtin-rules -j $NUM_THREADS `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    echo "dry run : summary commands are 
    "
    exit 0
@@ -232,7 +237,7 @@ function fake_prism() {
 
 function run_prism() {
    # this distributes the kmer distribtion builds for each file across the cluster
-   make -f kmer_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
+   make -f kmer_prism.mk -d -k  --no-builtin-rules -j $NUM_THREADS `cat $OUT_DIR/kmer_targets.txt` > $OUT_DIR/kmer_prism.log 2>&1
    # this uses the pickled distributions to make the final spectra
    # (note that the -k 6 arg here is not actually used , as the distributions have already been done by the make step)
    rm -f $OUT_DIR/kmer_summary_plus.${parameters_moniker}.txt
