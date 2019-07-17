@@ -55,6 +55,7 @@ for sample_ref in stats_dict:
    (p,n) = (stats_dict[sample_ref][2], stats_dict[sample_ref][1])
 
    q = 1-p
+   stddev = 0.0
    if n>0:
       stddev = (p * q / n ) ** .5
    out_rec[1] = str(p*100.0)
