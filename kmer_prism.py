@@ -288,8 +288,8 @@ def build_kmer_spectrum(datafile, kmer_patterns, sampling_proportion, num_proces
             kmer_list = sorted(kmer_prism.spectrum.items(), lambda x,y:cmp(y[1], x[1]))[0:number_to_assemble]   # sort in descending order and pick the first number_to_assemble
             # yields e.g. 
             #[(('CGCCGC',), 26870.0), (('GCGGCG',), 25952.0),....
-            kmer_list = [ item[0][0] for item in kmer_list ]
             print("(%s)"%str(kmer_list))
+            kmer_list = [ item[0][0] for item in kmer_list ]
             assemble_kmer_spectrum(kmer_list, datafile, input_filetype, None, weighting_method=weighting_method)
             
 

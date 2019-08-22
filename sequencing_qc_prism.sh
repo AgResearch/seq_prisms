@@ -363,7 +363,7 @@ function html_prism() {
 }
 
 function clean() {
-   nohup rm -rf $OUT_DIR/tardis_* > $OUT_DIR/sequenceing_clean.log 2>&1 &
+   nohup rm -rf $OUT_ROOT/tardis_* > $OUT_ROOT/sequencing_clean.log 2>&1 &
    rm $OUT_ROOT/*.fastq
 }
 
