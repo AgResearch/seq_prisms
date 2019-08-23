@@ -43,7 +43,10 @@ for filename in bam_stats_files:
                map_stats[1] = float(tokens[0]) 
             elif tokens[3] == "mapped":
                map_stats[0] = float(tokens[0]) 
-               map_stats[2] = map_stats[0]/map_stats[1] 
+               if map_stats[1] > 0:
+                  map_stats[2] = map_stats[0]/map_stats[1] 
+               else:
+                  map_stats[2] = 0 
                break
 
    stats_dict[sample_ref] = map_stats
