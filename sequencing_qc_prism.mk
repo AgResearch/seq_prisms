@@ -33,6 +33,10 @@
 	$@.sh > $@.mk.log 2>&1
 	date > $@
 
+%.seq_stats:
+	$@.sh > $@.mk.log 2>&1
+	date > $@
+
 %.bcl2fastq:  
 	$@.sh > $@.mk.log 2>&1
 	date > $@

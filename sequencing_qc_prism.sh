@@ -21,7 +21,7 @@ function get_opts() {
 
    help_text="
 usage :
-./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|annotation|all] [-s sample rate] -O outdir [file [.. file]] 
+./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|seq_stats|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|annotation|all] [-s sample rate] -O outdir [file [.. file]] 
 examples:
 sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
 sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
@@ -104,8 +104,8 @@ function check_opts() {
       exit 1
    fi
 
-   if [[ ( $ANALYSIS != "all" ) && ( $ANALYSIS != "bcl2fastq" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "annotation" ) && ( $ANALYSIS != "kmer_analysis" ) ) ]] ; then
-      echo "analysis must be one of bcl2fastq,fasta_sample,fastq_sample,fastqc,mapping_analysis,kmer_analysis,blast_analysis,annotation,all ) "
+   if [[ ( $ANALYSIS != "all" ) && ( $ANALYSIS != "bcl2fastq" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "seq_stats" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "annotation" ) && ( $ANALYSIS != "kmer_analysis" ) ) ]] ; then
+      echo "analysis must be one of bcl2fastq,fasta_sample,fastq_sample,seq_stats,fastqc,mapping_analysis,kmer_analysis,blast_analysis,annotation,all ) "
       exit 1
    fi
 
@@ -207,6 +207,26 @@ fi
       " > $OUT_ROOT/qc.fastq_sample.sh
    chmod +x $OUT_ROOT/qc.fastq_sample.sh
 
+
+   ###### seq stats  - simple file of counts of reads in all the files (works for either fasta or fastq)
+   echo $OUT_ROOT/qc.seq_stats  >> $OUT_ROOT/seq_stats_targets.txt
+   # prepare command-file
+   rm $OUT_ROOT/seq_stats.src
+   for filename in  `cat  $OUT_ROOT/file_list.txt `; do
+      echo count=\`$SEQ_PRISMS_BIN/kseq_count $filename \`\; echo $filename \" \" \$count >> $OUT_ROOT/seq_stats.src
+   done
+
+   echo "#!/bin/bash
+cd $OUT_ROOT
+mkdir -p seq_stats
+# launch commands
+tardis -q source _condition_text_input_$OUT_ROOT/seq_stats.src > $OUT_ROOT/seq_stats/seq_stats.txt 2>>$OUT_ROOT/seq_stats/seq_stats.stderr
+if [ \$? != 0 ]; then
+   echo \"seq stats returned an error code\"
+   exit 1
+fi
+      " > $OUT_ROOT/qc.seq_stats.sh
+   chmod +x $OUT_ROOT/qc.seq_stats.sh
 
    ###### fasta sample
    echo $OUT_ROOT/qc.fasta_sample  >> $OUT_ROOT/fasta_sample_targets.txt
