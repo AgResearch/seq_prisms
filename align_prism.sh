@@ -29,7 +29,7 @@ function get_opts() {
 \n
 \n
 example:\n
-bwa_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
+./align_prism.sh -n -D /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
 \n
 "
 
@@ -112,16 +112,42 @@ function test_if_fofn() {
       is_fofn=0
    else
       IFS=$'\n'
-      # if the first and last 50 records are filenames, assume fofn
+      # if the first and last 50 records are filenames, or suffixes of common index files, assume fofn
       for record in `awk '/\S+/{print}' $1 | head -50`; do  
          if [[ ( ! -f $record ) && ( ! -h $record ) ]]; then 
             is_fofn=0
+         fi
+
+         # check for possibility of list of blast database names
+         if [[ (  -f ${record}.nal ) || (  -h ${record}.nal ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.pal ) || (  -h ${record}.pal ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.nin ) || (  -h ${record}.nin ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.pin ) || (  -h ${record}.pin ) ]]; then
+            is_fofn=1
+         fi
+         if [ $is_fofn == 0 ]; then
             break
          fi
       done
       for record in `awk '/\S+/{print}' $1 | tail -50`; do  
-         if [[ ( ! -f $record ) && ( ! -h $record ) ]]; then 
+         if [[ ( ! -f $record ) && ( ! -h $record ) ]]; then
             is_fofn=0
+         fi
+
+         # check for possibility of list of blast database names
+         if [[ (  -f ${record}.nal ) || (  -h ${record}.nal ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.pal ) || (  -h ${record}.pal ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.nin ) || (  -h ${record}.nin ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.pin ) || (  -h ${record}.pin ) ]]; then
+            is_fofn=1
+         fi
+         if [ $is_fofn == 0 ]; then
             break
          fi
       done
