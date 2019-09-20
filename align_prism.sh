@@ -180,8 +180,8 @@ function check_opts() {
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
    fi
-   if [[ $ALIGNER != "blastn" && $ALIGNER != "qblastn" && $ALIGNER != "bwa" ]]; then
-      echo "ALIGNER must be one of blastn, qblastn, bwa"
+   if [[ $ALIGNER != "megablast" && $ALIGNER != "blastn" && $ALIGNER != "qblastn" && $ALIGNER != "qmegablast" && $ALIGNER != "bwa" ]]; then
+      echo "ALIGNER must be one of blastn, qblastn, bwa, megablast, qmegablast"
       exit 1
    fi
    if [ $REFERENCES == none ]; then
@@ -353,9 +353,17 @@ tardis --hpctype $HPC_TYPE -q -d $OUT_DIR samtools flagstat $OUT_DIR/${alignment
             " > $aligner_filename
          elif [ $ALIGNER == blastn ]; then
             echo "#!/bin/bash
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -task blastn -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
+            " > $aligner_filename
+         elif [ $ALIGNER == megablast ]; then
+            echo "#!/bin/bash
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
             " > $aligner_filename
          elif [ $ALIGNER == qblastn ]; then
+            echo "#!/bin/bash
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -task blastn -db $reference -query  _condition_fastq2fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
+            " > $aligner_filename
+         elif [ $ALIGNER == qmegablast ]; then
             echo "#!/bin/bash
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -query  _condition_fastq2fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
             " > $aligner_filename
