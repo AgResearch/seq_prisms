@@ -106,9 +106,12 @@ function test_if_fofn() {
    # test whether the arg is a fofn, by checking if each record in it is the 
    # name of a file 
    is_fofn=1
+   rp=`realpath $1`
    if [ -z "$1" ]; then
       is_fofn=0
    elif [[ ( ! -f $1 ) && ( ! -h $1 ) ]]; then
+      is_fofn=0
+   elif [[ ( ! -f $rp ) && ( ! -h $rp ) ]]; then
       is_fofn=0
    else
       IFS=$'\n'
