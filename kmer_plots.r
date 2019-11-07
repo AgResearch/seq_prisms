@@ -399,12 +399,27 @@ draw_distances_plot <- function(datalist, output_folder, distances_plot_image_fi
    dev.off()
 }
 
+draw_missing_plot <- function(plot_image_file, width, height, message) {
+   # https://stackoverflow.com/questions/19918985/r-plot-only-text
+   jpeg(filename = plot_image_file, width,height)
+   par(mar = c(0,0,0,0))
+   plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+   text(x = 0.5, y = 0.5, paste(message), cex = 1.6, col = "black")
+   par(mar = c(5, 4, 4, 2) + 0.1)
+   dev.off()
+}
+
 main <- function() {
    data_folder <- get_command_args()
    output_folder <- data_folder
    mydata <- get_data(data_folder, input_file, colname_pattern)
    draw_comparison_plot(mydata, output_folder, comparison_plot_image_file, zipfian_plot_comparisons)
-   draw_distances_plot(mydata, output_folder, distances_plot_image_file, zipfian_plot_comparisons, number_of_column_labels)
+   if ( ncol(mydata$entropy_data) >= 3) {
+      draw_distances_plot(mydata, output_folder, distances_plot_image_file, zipfian_plot_comparisons, number_of_column_labels)
+   }
+   else {
+      draw_missing_plot(distances_plot_image_file, 800,200, "insufficient data")
+   }
    draw_entropy_heatmap(mydata$entropy_data, output_folder, heatmap_image_file, number_of_heatmap_row_labels, number_of_column_labels)
    draw_zipfian_plots(mydata, output_folder, zipfian_plot_image_file, zipfian_plots_per_row) 
    return(mydata)
