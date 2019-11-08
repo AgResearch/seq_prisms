@@ -409,19 +409,47 @@ draw_missing_plot <- function(plot_image_file, width, height, message) {
    dev.off()
 }
 
+my_ncol <- function(arg) {
+   n = ncol(arg)
+   if (is.null(n)) {
+      n = 0
+   } 
+   return(n) 
+}
+
 main <- function() {
    data_folder <- get_command_args()
    output_folder <- data_folder
    mydata <- get_data(data_folder, input_file, colname_pattern)
-   draw_comparison_plot(mydata, output_folder, comparison_plot_image_file, zipfian_plot_comparisons)
-   if ( ncol(mydata$entropy_data) >= 3) {
+
+   if ( my_ncol(mydata$entropy_data) > 1) {
+      draw_comparison_plot(mydata, output_folder, comparison_plot_image_file, zipfian_plot_comparisons)
+   }
+   else {
+      draw_missing_plot(comparison_plot_image_file, 800,200, "insufficient data")
+   }
+
+   if ( my_ncol(mydata$entropy_data) >= 3) {
       draw_distances_plot(mydata, output_folder, distances_plot_image_file, zipfian_plot_comparisons, number_of_column_labels)
    }
    else {
       draw_missing_plot(distances_plot_image_file, 800,200, "insufficient data")
    }
-   draw_entropy_heatmap(mydata$entropy_data, output_folder, heatmap_image_file, number_of_heatmap_row_labels, number_of_column_labels)
-   draw_zipfian_plots(mydata, output_folder, zipfian_plot_image_file, zipfian_plots_per_row) 
+
+   if ( my_ncol(mydata$entropy_data) > 1) {
+      draw_entropy_heatmap(mydata$entropy_data, output_folder, heatmap_image_file, number_of_heatmap_row_labels, number_of_column_labels)
+   }
+   else {
+      draw_missing_plot(heatmap_image_file, 800,200, "insufficient data")
+   }
+
+   if ( my_ncol(mydata$entropy_data) > 1) {
+      draw_zipfian_plots(mydata, output_folder, zipfian_plot_image_file, zipfian_plots_per_row) 
+   }
+   else {
+      draw_missing_plot(zipfian_plot_image_file, 800,200, "insufficient data")
+   }
+
    return(mydata)
 }
 
