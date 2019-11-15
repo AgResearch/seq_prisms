@@ -180,8 +180,8 @@ function check_opts() {
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
    fi
-   if [[ $ALIGNER != "blastn" && $ALIGNER != "qblastn" && $ALIGNER != "bwa" && $ALIGNER != "qblastx" && $ALIGNER != "tblastx" ]]; then
-      echo "ALIGNER must be one of blastn, qblastn, bwa, qblastx, tblastx"
+   if [[ $ALIGNER != "blastn" && $ALIGNER != "qblastn" && $ALIGNER != "bwa" && $ALIGNER != "qblastx" && $ALIGNER != "tblastx" && $ALIGNER != "blastp" ]]; then
+      echo "ALIGNER must be one of blastn, qblastn, bwa, qblastx, tblastx, blastp"
       exit 1
    fi
    if [ $REFERENCES == none ]; then
@@ -358,6 +358,10 @@ tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -q
          elif [ $ALIGNER == tblastx ]; then
             echo "#!/bin/bash
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase tblastx -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
+            " > $aligner_filename
+         elif [ $ALIGNER == blastp ]; then
+            echo "#!/bin/bash
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastp -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
             " > $aligner_filename
          elif [ $ALIGNER == qblastn ]; then
             echo "#!/bin/bash
