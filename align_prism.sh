@@ -128,7 +128,11 @@ function test_if_fofn() {
             is_fofn=1
          elif [[ (  -f ${record}.nin ) || (  -h ${record}.nin ) ]]; then
             is_fofn=1
+         elif [[ (  -f ${record}.00.nin ) || (  -h ${record}.00.nin ) ]]; then
+            is_fofn=1
          elif [[ (  -f ${record}.pin ) || (  -h ${record}.pin ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.00.pin ) || (  -h ${record}.00.pin ) ]]; then
             is_fofn=1
          fi
          if [ $is_fofn == 0 ]; then
@@ -147,7 +151,11 @@ function test_if_fofn() {
             is_fofn=1
          elif [[ (  -f ${record}.nin ) || (  -h ${record}.nin ) ]]; then
             is_fofn=1
+         elif [[ (  -f ${record}.00.nin ) || (  -h ${record}.00.nin ) ]]; then
+            is_fofn=1
          elif [[ (  -f ${record}.pin ) || (  -h ${record}.pin ) ]]; then
+            is_fofn=1
+         elif [[ (  -f ${record}.00.pin ) || (  -h ${record}.00.pin ) ]]; then
             is_fofn=1
          fi
          if [ $is_fofn == 0 ]; then
