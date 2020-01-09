@@ -66,6 +66,10 @@ example:\n
          ;;
        r)
          REFERENCES=$OPTARG
+
+         # also assign to array (if arg is a filename containing db names, this will be updated later)
+         references_array=($OPTARG)
+         NUM_REFERENCES=${#references_array[*]}
          ;;
        m)
          MAX_TASKS=$OPTARG
@@ -102,63 +106,64 @@ example:\n
 }
 
 
-function test_if_fofn() {
-   # test whether the arg is a fofn, by checking if each record in it is the 
-   # name of a file 
-   is_fofn=1
+function test_if_file_of_dbnames() {
+   # test whether the arg is a file that contains the name of blast or other databases, by checking if each record in it is the 
+   # name of a file , or a plausible basename  of a database. This is somewhat fallible , and it is better to 
+   # specify multiple references on the command line
+   is_file_of_dbnames=1
    rp=`realpath $1`
    if [ -z "$1" ]; then
-      is_fofn=0
+      is_file_of_dbnames=0
    elif [[ ( ! -f $1 ) && ( ! -h $1 ) ]]; then
-      is_fofn=0
+      is_file_of_dbnames=0
    elif [[ ( ! -f $rp ) && ( ! -h $rp ) ]]; then
-      is_fofn=0
+      is_file_of_dbnames=0
    else
       IFS=$'\n'
-      # if the first and last 50 records are filenames, or suffixes of common index files, assume fofn
+      # if the first and last 50 records are filenames, or suffixes of common index files, assume file_of_dbnames 
       for record in `awk '/\S+/{print}' $1 | head -50`; do  
          if [[ ( ! -f $record ) && ( ! -h $record ) ]]; then 
-            is_fofn=0
+            is_file_of_dbnames=0
          fi
 
          # check for possibility of list of blast database names
          if [[ (  -f ${record}.nal ) || (  -h ${record}.nal ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.pal ) || (  -h ${record}.pal ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.nin ) || (  -h ${record}.nin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.00.nin ) || (  -h ${record}.00.nin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.pin ) || (  -h ${record}.pin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.00.pin ) || (  -h ${record}.00.pin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          fi
-         if [ $is_fofn == 0 ]; then
+         if [ $is_file_of_dbnames == 0 ]; then
             break
          fi
       done
       for record in `awk '/\S+/{print}' $1 | tail -50`; do  
          if [[ ( ! -f $record ) && ( ! -h $record ) ]]; then
-            is_fofn=0
+            is_file_of_dbnames=0
          fi
 
          # check for possibility of list of blast database names
          if [[ (  -f ${record}.nal ) || (  -h ${record}.nal ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.pal ) || (  -h ${record}.pal ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.nin ) || (  -h ${record}.nin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.00.nin ) || (  -h ${record}.00.nin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.pin ) || (  -h ${record}.pin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          elif [[ (  -f ${record}.00.pin ) || (  -h ${record}.00.pin ) ]]; then
-            is_fofn=1
+            is_file_of_dbnames=1
          fi
-         if [ $is_fofn == 0 ]; then
+         if [ $is_file_of_dbnames == 0 ]; then
             break
          fi
       done
@@ -177,8 +182,6 @@ function test_if_f() {
    fi
 }
 
-
-
 function check_opts() {
    if [ ! -d $OUT_DIR ]; then
       echo "OUT_DIR $OUT_DIR not found"
@@ -192,19 +195,17 @@ function check_opts() {
       echo "ALIGNER must be one of blastn, qblastn, bwa, qblastx, tblastx, blastp"
       exit 1
    fi
-   if [ $REFERENCES == none ]; then
+   if [ "$REFERENCES" == none ]; then
       echo "must specify one or more references to align against (-r [ref name | file of ref names ] )"
       exit 1
    fi
 
+   test_if_file_of_dbnames $REFERENCES
 
-   test_if_fofn $REFERENCES
+   if [[ ( $is_file_of_dbnames != 1 ) && ( $NUM_REFERENCES == 1 ) ]]; then
+      # just one reference, specified on command line
 
-   if [ $is_fofn != 1  ]; then
-      # assume just one reference, specified on command line
-      references_array[0]=$REFERENCES
-      NUM_REFERENCES=1
-
+      # see how parameters are supplied
       test_if_f $PARAMETERS
 
       if [ -z "$PARAMETERS"  ]; then
@@ -227,16 +228,21 @@ function check_opts() {
             references_array[$i]=$REFERENCES      
          done
       fi
-   else  # we have more than one reference to set up 
-      index=0
-      IFS=$'\n'
-      for record in `awk '/\S+/{print}' $REFERENCES`; do
-         references_array[$index]=$record
-         let index=$index+1
-      done
-      NUM_REFERENCES=${#references_array[*]}
+   else  # we need to allow for multiple references and may need to pull out the list of references from a file  
+      
+      # if they were listed in a file
+      if [ $is_file_of_dbnames == 1 ]; then 
+         index=0
+         IFS=$'\n'
+         for record in `awk '/\S+/{print}' $REFERENCES`; do
+            references_array[$index]=$record
+            let index=$index+1
+         done
+         NUM_REFERENCES=${#references_array[*]}
+      fi
 
       test_if_f $PARAMETERS
+      #( its not possible to specify multiple parameter sets on command-line - must supply in a file)
 
       if [ -z "$PARAMETERS"  ]; then
          echo "warning , no alignment parameters supplied, $ALIGNER defaults will apply"
