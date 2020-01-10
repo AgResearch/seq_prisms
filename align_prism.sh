@@ -334,7 +334,7 @@ function get_targets() {
    
    for ((i=0;$i<${#references_array[*]};i=$i+1)) do
       for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-         file=${files_array[$j]}
+         file=`realpath ${files_array[$j]}`
          file_base=`basename $file`
 	 ref_base=`basename ${references_array[$i]}`
          parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g' | sed "s/'//g"  | sed 's/\\\//g' | sed 's/"//g' `

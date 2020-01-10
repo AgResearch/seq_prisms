@@ -184,7 +184,7 @@ function get_targets() {
    file1=""
    file2=""
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-      file=${files_array[$j]}
+      file=`realpath ${files_array[$j]}`
       file_base=`basename "$file"`
       parameters_moniker=`echo $sample_phrase | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
       if [ $MINIMUM_TAG_COUNT != "0" ]; then

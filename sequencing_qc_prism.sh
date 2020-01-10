@@ -181,7 +181,7 @@ function get_targets() {
    
    ################## file-set targets (for these we call another prism, passing it the list of files)
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-      file=${files_array[$j]}
+      file=`realpath ${files_array[$j]}`
       echo $file >> $OUT_ROOT/file_list.txt
    done
 
@@ -300,7 +300,7 @@ fi
 
    ################## individual file targets (for these we call anotherapplication)
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-      file=${files_array[$j]}
+      file=`realpath ${files_array[$j]}`
       base=`basename $file`
       file_moniker=$base
 

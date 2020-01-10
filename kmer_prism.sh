@@ -175,7 +175,7 @@ function get_targets() {
 
    
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-      file=${files_array[$j]}
+      file=`realpath ${files_array[$j]}`
       file_base=`basename $file`
       parameters_moniker=`echo $KMER_PARAMETERS | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
       SUMMARY_TARGETS="$SUMMARY_TARGETS $OUT_DIR/${file_base}.${parameters_moniker}.1"

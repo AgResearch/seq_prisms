@@ -163,7 +163,7 @@ function get_targets() {
 
    
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-      file=${files_array[$j]}
+      file=`realpath ${files_array[$j]}`
       file_base=`basename $file`
       parameters_moniker=`echo $ANNOTATION_PARAMETERS | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
       parameters_moniker="a${ANALYSIS_NAME}p${parameters_moniker}w${WEIGHTING_METHOD}"
