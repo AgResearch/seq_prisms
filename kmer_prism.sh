@@ -162,6 +162,26 @@ function check_env() {
    fi
 }
 
+function link_inputs() {
+   # ensure unique monikers for inputs by accessing them via unique links
+   for ((j=0;$j<$NUM_FILES;j=$j+1)) do
+      file=`realpath ${files_array[$j]}`
+      base=`basename $file`
+      link_base=$base
+      if [ -h  $OUT_DIR/$link_base ]; then
+         count=2
+         while [ -h $OUT_DIR/${count}_${link_base} ]; do
+            let count=$count+1
+         done
+         ln -s $file $OUT_DIR/${count}_${link_base} 
+         files_array[$j]=$OUT_DIR/${count}_${link_base}
+      else
+         ln -s $file $OUT_DIR/${link_base} 
+         files_array[$j]=$OUT_DIR/${link_base}
+      fi
+   done
+}
+
 function get_targets() {
 
    rm -f $OUT_DIR/kmer_targets.txt
@@ -175,7 +195,7 @@ function get_targets() {
 
    
    for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-      file=`realpath ${files_array[$j]}`
+      file=${files_array[$j]}
       file_base=`basename $file`
       parameters_moniker=`echo $KMER_PARAMETERS | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g'`
       SUMMARY_TARGETS="$SUMMARY_TARGETS $OUT_DIR/${file_base}.${parameters_moniker}.1"
@@ -285,6 +305,7 @@ function main() {
    check_opts
    echo_opts
    check_env
+   link_inputs
    get_targets
    configure_env
    if [ $DRY_RUN != "no" ]; then
