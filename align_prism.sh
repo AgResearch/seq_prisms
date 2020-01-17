@@ -324,7 +324,25 @@ function check_env() {
    fi
 }
 
-
+function link_inputs() {
+   # ensure unique monikers for inputs by accessing them via unique links
+   for ((j=0;$j<$NUM_FILES;j=$j+1)) do
+      file=`realpath ${files_array[$j]}`
+      base=`basename $file`
+      link_base=$base
+      if [ -h  $OUT_DIR/$link_base ]; then
+         count=2
+         while [ -h $OUT_DIR/${count}_${link_base} ]; do
+            let count=$count+1
+         done
+         ln -s $file $OUT_DIR/${count}_${link_base}
+         files_array[$j]=$OUT_DIR/${count}_${link_base}
+      else
+         ln -s $file $OUT_DIR/${link_base}
+         files_array[$j]=$OUT_DIR/${link_base}
+      fi
+   done
+}
 
 function get_targets() {
    # make a target moniker for each combination of input file and reference, and write associated 
@@ -334,7 +352,7 @@ function get_targets() {
    
    for ((i=0;$i<${#references_array[*]};i=$i+1)) do
       for ((j=0;$j<$NUM_FILES;j=$j+1)) do
-         file=`realpath ${files_array[$j]}`
+         file=${files_array[$j]}
          file_base=`basename $file`
 	 ref_base=`basename ${references_array[$i]}`
          parameters_moniker=`echo ${parameters_array[$i]} | sed 's/ //g' | sed 's/\//\./g' | sed 's/-//g' | sed "s/'//g"  | sed 's/\\\//g' | sed 's/"//g' `
@@ -422,6 +440,7 @@ function main() {
    check_opts
    echo_opts
    check_env
+   link_inputs
    get_targets
    configure_env
    if [ $DRY_RUN != "no" ]; then
