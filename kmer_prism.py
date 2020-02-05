@@ -103,6 +103,7 @@ def parse_weight_from_sequence_description(sequence):
     assumed the count is encoded like this in the description
     seq_28639 count=1.004008
     """
+
     weighting_match = re.search("count=(\d*\.*\d*)\s*$", sequence.description)
     if weighting_match is not None:
         weight = float(weighting_match.groups()[0])
@@ -316,7 +317,7 @@ def assemble_kmer_spectrum(kmer_list, sequence_file, sequence_file_type, samplin
                 zsequences_counts_stream = itertools.izip(file_to_stream_func(sequence_file, *file_to_stream_func_xargs), counts_iter)
         elif weighting_method == "tag_count":
             zsequences_counts_stream = itertools.izip(file_to_stream_func(sequence_file, *file_to_stream_func_xargs), itertools.repeat(1))
-            zsequences_counts_stream = ((sequence, parse_weight_from_sequence_description(sequence)) for sequence in zsequences_counts_stream )
+            zsequences_counts_stream = ((sequence[0], parse_weight_from_sequence_description(sequence[0])) for sequence in zsequences_counts_stream )
         else:
             zsequences_counts_stream = itertools.izip(file_to_stream_func(sequence_file, *file_to_stream_func_xargs), itertools.repeat(1))
                 
