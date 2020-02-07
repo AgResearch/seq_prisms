@@ -118,7 +118,7 @@ draw_most_variable_heatmap <- function(args, taxa_count) {
        #keysize=1.0, margin=c(17,25), cexRow=1.5, cexCol=1.6, 
        #keysize=1.0, margin=c(37,48), cexRow=2.0, cexCol=2.5, 
        keysize=1.0, margin=c(40,50), cexRow=2.0, cexCol=1.8, 
-       lmat=rbind(  c(4,3,0 ), c(2, 1, 0) ), lwid=c(.1, .6, 0 ), lhei=c(.25, 3),labCol=colLabels, labRow=rowLabels)
+       lmat=rbind(  c(4,3,0 ), c(2, 1, 0) ), lwid=c(.1, 1.2, 0 ), lhei=c(.25, 3),labCol=colLabels, labRow=rowLabels)
 
    title(paste(args$analysis_name, " (", taxa_count, " most variable taxa across samples)", sep=""), cex.main=3)
 
@@ -253,7 +253,6 @@ draw_profiles_heatmap <- function(args, num_clust) {
        keysize=1.0, margin=c(40,50), cexRow=2.0, cexCol=1.8, 
        #lmat=rbind(  c(4,3,0 ), c(2, 1, 0) ), lwid=c(.2, .6, 0 ), lhei=c(.25, 3),labCol=colLabels)
        lmat=rbind(  c(4,3,0), c(2,1,0)), lwid=c(.1, 1.2, 0), lhei=c(.25, 3 ),labCol=colLabels)
-
 
    title(paste(args$analysis_name, " taxa profiles, cluster size ", num_clust, " (clusters - i.e. rows - labelled by central taxa)", sep=""), cex.main=3)
 
