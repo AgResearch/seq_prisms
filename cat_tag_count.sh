@@ -20,23 +20,25 @@ help_text="
  (stdout / stderr of the process itself is written to /tmp/*.cat_tag_count_stderr)\n
 \n
  examples : \n
- (note if you are running the tag_cat wrapper, substitute tag_cat for cat_tag_count.sh below) \n
  # just list the raw text tag file \n
- cat_tag_count.sh /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ tag_cat /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
  # produce a redundant fasta listing of tags (i.e. each is listed as a sequence N times, N its tag count) \n
- cat_tag_count.sh -O fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ tag_cat -O fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
  # produce a sampled redundant fasta listing of tags (i.e. each is listed as a sequence N times, N its tag count) \n
- cat_tag_count.sh -O fasta -s .001 /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ tag_cat -O fasta -s .001 /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
  # produce a sampled redundant fasta listing of tags (i.e. each is listed as a sequence N times, N its tag count) - but specify a ninimum sample size\n
- cat_tag_count.sh -O fasta -s .001 -M 10000 /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ tag_cat -O fasta -s .001 -M 10000 /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+\n
+ # produce a sampled non-redundant fasta listing of tags (so each tag in general has a fractional weight) \n
+ tag_cat -O fasta -s .001 -M 10000 -u /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 \n
  # produce a non-redundant fasta listing of tags (i.e. each is listed as a sequence once) \n
- cat_tag_count.sh -u -O fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ tag_cat -u -O fasta /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
  # print out the total count of all tags \n
- cat_tag_count.sh -O count /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
+ tag_cat -O count /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt \n
 "
 
 FORMAT="text"
