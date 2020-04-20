@@ -3,26 +3,15 @@ import sys
 import re
 import os
 
-bam_stats_files=sys.argv[1:]
+uneak_stdout_files=sys.argv[1:]
 stats_dict={}
 
 example= """
-16182 + 0 in total (QC-passed reads + QC-failed reads)
-0 + 0 secondary
-0 + 0 supplementary
-0 + 0 duplicates
-6011 + 0 mapped (37.15% : N/A)
-0 + 0 paired in sequencing
-0 + 0 read1
-0 + 0 read2
-0 + 0 properly paired (N/A : N/A)
-0 + 0 with itself and mate mapped
-0 + 0 singletons (N/A : N/A)
-0 + 0 with mate mapped to a different chr
-0 + 0 with mate mapped to a different chr (mapQ>=5)
+Total number of reads in lane=243469299
+Total number of good barcoded reads=199171115
 """
 
-for filename in bam_stats_files:
+for filename in uneak_stdout_files:
    # e.g. SQ0788_CCVK0ANXX_s_1_fastq.txt.gz.fastq.s.00005.trimmed.fastq.bwa.CELA_all_but_U.fa.B10.stats
    # containing e.g.
    #Mapped reads:      260087	(70.3575%)
