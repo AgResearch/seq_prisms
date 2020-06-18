@@ -13,10 +13,10 @@ function get_opts() {
    ACC_COL=1
    USE_BASE=TRUE
    RESULT_FORMAT=taxa
-   DB_DIR=/dataset/gseq_processing/ztmp/melseq
+   DB_DIR=/dataset/gseq_processing/scratch/taxonomizr
    help_text="
 \n
-get_taxonomy.sh  [-h] [-c (accession column, default 1)] [-b (use base, TRUE|FALSE default TRUE)] [-f (result format, taxa|taxid, default taxa)] [-d (db dir default /dataset/gseq_processing/ztmp/melseq) ]  -O outdir input_file_names\n
+get_taxonomy.sh  [-h] [-c (accession column, default 1)] [-b (use base, TRUE|FALSE default TRUE)] [-f (result format, taxa|taxid, default taxa)] [-d (db dir default /dataset/gseq_processing/scratch/taxonomizr) ]  -O outdir input_file_names\n
 \n
 \n
 example:\n
