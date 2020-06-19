@@ -2,7 +2,7 @@
 
 #SBATCH -J $tardis_job_moniker
 #SBATCH -A $tardis_account_moniker        # Project Account
-#SBATCH --time=2:00:00            # Walltime
+#SBATCH --time=_max-wall-time_:00:00            # Walltime
 #SBATCH --ntasks=1                 # number of parallel processes
 #SBATCH --ntasks-per-socket=1      # number of processes allowed on a socket
 #SBATCH --cpus-per-task=4          #number of threads per process

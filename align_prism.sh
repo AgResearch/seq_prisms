@@ -20,12 +20,13 @@ function get_opts() {
    REFERENCES=none
    NUM_REFERENCES=1
    MEM_PER_CPU=8G
+   MAX_WALL_TIME=2
    NUM_THREADS=16
 
 
    help_text="
 \n
-./align_prism.sh  [-h] [-n] [-d] [-f] [-j num_threads] [-s SAMPLE_RATE] -a aligner -r [ref name | file of ref names ] -p [ parameters or file of parameters ] -O outdir [-C local|slurm ] input_file_names\n
+./align_prism.sh  [-h] [-n] [-d] [-f] [-j num_threads] [-B mem_per_cpu] [-W max_walltime ] [-s SAMPLE_RATE] -a aligner -r [ref name | file of ref names ] -p [ parameters or file of parameters ] -O outdir [-C local|slurm ] input_file_names\n
 \n
 \n
 example:\n
@@ -34,7 +35,7 @@ example:\n
 "
 
    # defaults:
-   while getopts ":nhfO:C:s:m:a:r:p:B:j:" opt; do
+   while getopts ":nhfO:C:s:m:a:r:p:B:j:W:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -77,6 +78,9 @@ example:\n
        B)
          MEM_PER_CPU=$OPTARG
          ;;
+       W)
+         MAX_WALL_TIME=$OPTARG
+         ;;
        j)
          NUM_THREADS=$OPTARG
          ;;
@@ -103,6 +107,11 @@ example:\n
    for ((i=0;$i<$NUM_FILES;i=$i+1)) do
       files_array[$i]=${files[$i]}     
    done
+
+   if [ $NUM_FILES == 0 ]; then
+      echo "exiting as no input files specified"
+      exit 0
+   fi
 }
 
 
@@ -183,6 +192,25 @@ function test_if_f() {
 }
 
 function check_opts() {
+   python -c "x=int(\"$NUM_THREADS\")" > /dev/null 2>&1
+   if [ $? != 0 ]; then
+      echo "error bad value for NUM_THREADS ( $NUM_THREADS )"
+      exit 1
+   fi
+
+   python -c "x=int(\"$MAX_WALL_TIME\")" > /dev/null 2>&1
+   if [ $? != 0 ]; then
+      echo "error bad value for MAX_WALL_TIME ( $MAX_WALL_TIME )"
+      exit 1
+   fi
+
+   if [ -z "$OUT_DIR" ]; then
+      echo "must specify an output folder (-O option)"
+      exit 1
+   fi
+
+   OUT_DIR=`realpath $OUT_DIR`
+
    if [ ! -d $OUT_DIR ]; then
       echo "OUT_DIR $OUT_DIR not found"
       exit 1
@@ -269,6 +297,7 @@ function check_opts() {
          echo "error - have  ${#references_array[*]} references but ${#parameters_array[*]} parameter sets - must have same number of each !"
          exit 1
       fi
+
    fi
 }
 
@@ -304,7 +333,7 @@ function configure_env() {
    # write one to set max tasks and (indirectly) mem per cpu (via also 
    # configuring a slurm job file , and pointing tardis at that )
    if [ ! -f $OUT_DIR/tardis.toml ]; then 
-      cat $SEQ_PRISMS_BIN/etc/default_slurm_array_job | sed "s/_mem-per-cpu_/${MEM_PER_CPU}/g" - > $OUT_DIR/slurm_array_job
+      cat $SEQ_PRISMS_BIN/etc/default_slurm_array_job | sed "s/_mem-per-cpu_/${MEM_PER_CPU}/g" - | sed "s/_max-wall-time_/${MAX_WALL_TIME}/g" - > $OUT_DIR/slurm_array_job
       cat >$OUT_DIR/tardis.toml <<EOF
 max_tasks = $MAX_TASKS
 jobtemplatefile = "$OUT_DIR/slurm_array_job"
