@@ -219,10 +219,12 @@ function check_opts() {
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
    fi
-   if [[ $ALIGNER != "blastn" && $ALIGNER != "qblastn" && $ALIGNER != "bwa" && $ALIGNER != "qblastx" && $ALIGNER != "tblastx" && $ALIGNER != "blastp" ]]; then
-      echo "ALIGNER must be one of blastn, qblastn, bwa, qblastx, tblastx, blastp"
+
+   if [[ $ALIGNER != "blastn" && $ALIGNER != "qblastn" && $ALIGNER != "bwa" && $ALIGNER != "qblastx" && $ALIGNER != "tblastx" && $ALIGNER != "blastp" && $ALIGNER != "blastx" ]]; then
+      echo "ALIGNER must be one of blastn, qblastn, bwa, blastx, qblastx, tblastx, blastp, blastx"
       exit 1
    fi
+
    if [ "$REFERENCES" == none ]; then
       echo "must specify one or more references to align against (-r [ref name | file of ref names ] )"
       exit 1
@@ -419,6 +421,10 @@ tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastn -db $reference -q
          elif [ $ALIGNER == tblastx ]; then
             echo "#!/bin/bash
 tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase tblastx -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
+            " > $aligner_filename
+         elif [ $ALIGNER == blastx ]; then
+            echo "#!/bin/bash
+tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase blastx -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
             " > $aligner_filename
          elif [ $ALIGNER == blastp ]; then
             echo "#!/bin/bash
