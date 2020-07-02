@@ -251,13 +251,13 @@ tardis --hpctype $HPC_TYPE -d  $OUT_DIR --shell-include-file $OUT_DIR/tassel3_en
 
 function fake_prism() {
    echo "dry run ! 
-   make -n -f sample_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/sampling_targets.txt` > $OUT_DIR/sample_prism.log 2>&1
+   make -n -f sample_prism.mk -d -k  --no-builtin-rules -j 8 `cat $OUT_DIR/sampling_targets.txt` > $OUT_DIR/sample_prism.log 2>&1
    "
    exit 0
 }
 
 function run_prism() {
-   make -f sample_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/sampling_targets.txt` > $OUT_DIR/sample_prism.log 2>&1
+   make -f sample_prism.mk -d -k  --no-builtin-rules -j 8 `cat $OUT_DIR/sampling_targets.txt` > $OUT_DIR/sample_prism.log 2>&1
 }
 
 function html_prism() {

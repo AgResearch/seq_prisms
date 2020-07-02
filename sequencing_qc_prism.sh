@@ -373,7 +373,7 @@ function fake_prism() {
 function run_prism() {
    cd $OUT_ROOT
 
-   make -f sequencing_qc_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_ROOT/${ANALYSIS}_targets.txt` > $OUT_ROOT/${ANALYSIS}.log 2>&1
+   make -f sequencing_qc_prism.mk -d -k  --no-builtin-rules -j 8 `cat $OUT_ROOT/${ANALYSIS}_targets.txt` > $OUT_ROOT/${ANALYSIS}.log 2>&1
 
    # run summaries
 }

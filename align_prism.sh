@@ -21,7 +21,7 @@ function get_opts() {
    NUM_REFERENCES=1
    MEM_PER_CPU=8G
    MAX_WALL_TIME=2
-   NUM_THREADS=16
+   NUM_THREADS=8
 
 
    help_text="

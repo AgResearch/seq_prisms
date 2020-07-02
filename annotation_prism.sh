@@ -202,7 +202,7 @@ fi
 
 function fake_prism() {
    echo "dry run ! "
-   make -n -f annotation_prism.mk -d -k  --no-builtin-rules -j 16 `cat $OUT_DIR/annotation_targets.txt` > $OUT_DIR/annotation_prism.log 2>&1
+   make -n -f annotation_prism.mk -d -k  --no-builtin-rules -j 8 `cat $OUT_DIR/annotation_targets.txt` > $OUT_DIR/annotation_prism.log 2>&1
    echo "dry run : summary commands are 
    "
    exit 0
@@ -210,7 +210,7 @@ function fake_prism() {
 
 function run_prism() {
    # this distributes the annotation distribtion builds for each file across the cluster
-   make -f annotation_prism.mk -d $OUT_DIR -k  --no-builtin-rules -j 16 `cat $OUT_DIR/annotation_targets.txt` > $OUT_DIR/annotation_prism.log 2>&1
+   make -f annotation_prism.mk -d $OUT_DIR -k  --no-builtin-rules -j 8 `cat $OUT_DIR/annotation_targets.txt` > $OUT_DIR/annotation_prism.log 2>&1
 
 
    if [ $ANALYSIS_NAME == "taxonomy" ]; then

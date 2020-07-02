@@ -14,7 +14,7 @@ function get_opts() {
    MINIMUM_SAMPLE_SIZE=0
    KMERER=fasta
    FORCE=no
-   NUM_THREADS=16
+   NUM_THREADS=8
 
 
    help_text="
