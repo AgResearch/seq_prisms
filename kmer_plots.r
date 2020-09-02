@@ -30,7 +30,7 @@ input_file="kmer_summary.txt"
 colname_pattern=NULL      
 
 heatmap_image_file="kmer_entropy.jpg"                                             
-number_of_heatmap_row_labels=100  
+number_of_heatmap_row_labels=70  
 
 # next is the number of labels that will appear in the 
 # heatmap, and in the dimensional scaling plot                                                
@@ -201,8 +201,10 @@ draw_entropy_heatmap <- function(datamatrix, output_folder, heatmap_image_file, 
    # self-information of the kmers in the data
    # (i.e. rare kmer = large self information, abundant kmer = low self information)
    setwd(output_folder)
-   row_label_interval=max(1, floor(nrow(datamatrix)/number_of_heatmap_row_labels))  # 1=label every location 2=label every 2nd location  etc 
-   col_label_interval=max(1, floor(ncol(datamatrix)/number_of_column_labels))  # 1=label every location 2=label every 2nd location  etc 
+   row_label_interval=max(1, round(nrow(datamatrix)/number_of_heatmap_row_labels))  # 1=label every location 2=label every 2nd location  etc 
+   col_label_interval=max(1, round(ncol(datamatrix)/number_of_column_labels))  # 1=label every location 2=label every 2nd location  etc 
+
+   #print(c("debug1",ncol(datamatrix), number_of_column_labels, col_label_interval))
 
    #cm<-brewer.pal(9,"BuPu") # sequential
    cm <-c("#F7FCFD", "#E0ECF4", "#BFD3E6", "#9EBCDA", "#8C96C6", "#8C6BB1", "#88419D", "#810F7C", "#4D004B")
@@ -373,7 +375,7 @@ draw_distances_plot <- function(datalist, output_folder, distances_plot_image_fi
       }
    }
 
-   col_label_interval=max(1, floor(ncol(datalist$entropy_data)/number_of_column_labels))  # 1=label every location 2=label every 2nd location  etc 
+   col_label_interval=max(1, round(ncol(datalist$entropy_data)/number_of_column_labels))  # 1=label every location 2=label every 2nd location  etc 
    
    #col_label_selector <- sequence(ncol(datalist$entropy_data))
    #col_label_selector <- subset(col_label_selector, col_label_selector %% col_label_interval == 0)
