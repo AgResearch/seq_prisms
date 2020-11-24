@@ -196,6 +196,7 @@ function get_targets() {
    ###### fastq sample 
    echo $OUT_ROOT/qc.fastq_sample  >> $OUT_ROOT/fastq_sample_targets.txt
    echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p fastq_sample
 # run fastq_sample
@@ -217,6 +218,7 @@ fi
    done
 
    echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p seq_stats
 # launch commands
@@ -231,6 +233,7 @@ fi
    ###### fasta sample
    echo $OUT_ROOT/qc.fasta_sample  >> $OUT_ROOT/fasta_sample_targets.txt
    echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p fasta_sample
 # run fasta_sample
@@ -245,6 +248,7 @@ fi
    ###### blast_analysis
    echo $OUT_ROOT/qc.blast_analysis  >> $OUT_ROOT/blast_analysis_targets.txt
    echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p blast_analysis
 # run blast
@@ -260,6 +264,7 @@ fi
    ################ annotation 
    echo $OUT_ROOT/qc.annotation  >> $OUT_ROOT/annotation_targets.txt
    echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p annotation
 # summarise species from blast results
@@ -280,6 +285,7 @@ fi
    ################  kmer analysis 
    echo $OUT_ROOT/qc.kmer_analysis >> $OUT_ROOT/kmer_analysis_targets.txt
    echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p kmer_analysis
 # run kmer analysis
@@ -331,6 +337,7 @@ fi
          run_dir=`dirname $file`
          in_dir=$run_dir/Data/Intensities/BaseCalls
          echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p bcl2fastq
 # run bcl2fastq
@@ -349,6 +356,7 @@ fi
 
       ############### fastqc script
       echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p fastqc
 # run fastqc

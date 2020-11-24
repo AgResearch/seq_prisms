@@ -294,6 +294,18 @@ function clean() {
    nohup rm -rf $OUT_DIR/tardis_* > $OUT_DIR/kmer_clean.log 2>&1 &
 }
 
+function clean_prism() {
+   # clean up the target shortcuts, ensuring we only delete in OUT_DIR
+   for ((j=0;$j<$NUM_FILES;j=$j+1)) do
+      file=${files_array[$j]}
+
+      base=`basename $file`
+
+      rm -f $OUT_DIR/$base
+   done
+}
+
+
 
 function html_prism() {
    echo "tba" > $OUT_DIR/kmer_prism.html 2>&1
@@ -315,8 +327,9 @@ function main() {
       if [ $? == 0 ] ; then
          clean
          html_prism
+         clean_prism
       else
-         echo "error state from kmer run - skipping clean and html page generation"
+         echo "error state from sample run - skipping html page generation and clean (suggest deleting target file links in $OUT_DIR before retrying)"
          exit 1
       fi
    fi
