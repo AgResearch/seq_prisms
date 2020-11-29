@@ -167,11 +167,11 @@ function link_inputs() {
       link_base=$base
       if [ -h  $OUT_DIR/$link_base ]; then
          count=2
-         while [ -h $OUT_DIR/${count}_${link_base} ]; do
+         while [ -h $OUT_DIR/${count}${link_base} ]; do
             let count=$count+1
          done
-         ln -s $file $OUT_DIR/${count}_${link_base}
-         files_array[$j]=$OUT_DIR/${count}_${link_base}
+         ln -s $file $OUT_DIR/${count}${link_base}
+         files_array[$j]=$OUT_DIR/${count}${link_base}
       else
          ln -s $file $OUT_DIR/${link_base}
          files_array[$j]=$OUT_DIR/${link_base}
