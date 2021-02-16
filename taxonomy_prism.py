@@ -19,14 +19,15 @@ def my_hit_provider(filename, *xargs):
     query = ""
     while True:
         #print "debug " + str(atuple)
-        weight = 1
+        weight = 1.0
         query_match = re.search("^#\s+Query:\s+(.*)$",atuple[0].strip())
         if query_match is not None:
             query = query_match.groups()[0]
         if re.search(" 0 hits",atuple[0],re.IGNORECASE) is not None:
             if weighting_method == "tag_count":
                 weighting_match = re.search("count=(\d*\.*\d*)\s*$", query)
-                weight = float(weighting_match.groups()[0])
+                if weighting_match is not None:
+                    weight = float(weighting_match.groups()[0])
             yield ((query,'No hits','No hits'),weight)
         elif atuple[1:] == tuple( (len(atuple)-1) * [None] ):
             pass
@@ -35,7 +36,8 @@ def my_hit_provider(filename, *xargs):
         else:
             if weighting_method == "tag_count":
                 weighting_match = re.search("count=(\d*\.*\d*)\s*$", query)
-                weight = float(weighting_match.groups()[0])
+                if weighting_match is not None:
+                    weight = float(weighting_match.groups()[0])
             yield (atuple, weight)
         
         atuple = tuple_stream.next()
