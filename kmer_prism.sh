@@ -14,6 +14,8 @@ function get_opts() {
    MINIMUM_SAMPLE_SIZE=0
    KMERER=fasta
    FORCE=no
+   MEM_PER_CPU=8G
+   MAX_WALL_TIME=2
    NUM_THREADS=8
 
 
@@ -28,7 +30,7 @@ kmer_prism.sh -n -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset
 "
 
    # defaults:
-   while getopts ":nhfO:C:s:M:p:a:j:" opt; do
+   while getopts ":nhfO:C:s:M:p:a:j:B:W:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -63,6 +65,12 @@ kmer_prism.sh -n -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset
          ;;
        j)
          NUM_THREADS=$OPTARG
+         ;;
+       B)
+         MEM_PER_CPU=$OPTARG
+         ;;
+       W)
+         MAX_WALL_TIME=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -108,6 +116,13 @@ function check_opts() {
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
    fi
+
+   python -c "x=int(\"$MAX_WALL_TIME\")" > /dev/null 2>&1
+   if [ $? != 0 ]; then
+      echo "error bad value for MAX_WALL_TIME ( $MAX_WALL_TIME )"
+      exit 1
+   fi
+
 }
 
 function echo_opts() {
@@ -135,10 +150,14 @@ function configure_env() {
    cp ./kmer_prism.py $OUT_DIR
    cp ./data_prism.py $OUT_DIR
    cp ./kmer_plots.r $OUT_DIR
-   cat >$OUT_DIR/tardis.toml <<EOF
+   if [ ! -f $OUT_DIR/tardis.toml ]; then
+      cat $SEQ_PRISMS_BIN/etc/default_slurm_array_job | sed "s/_mem-per-cpu_/${MEM_PER_CPU}/g" - | sed "s/_max-wall-time_/${MAX_WALL_TIME}/g" - > $OUT_DIR/slurm_array_job
+      cat >$OUT_DIR/tardis.toml <<EOF
 max_tasks = $MAX_TASKS
+jobtemplatefile = "$OUT_DIR/slurm_array_job"
 min_sample_size = $MINIMUM_SAMPLE_SIZE
 EOF
+   fi
    echo "
 conda activate /dataset/bioinformatics_dev/active/conda-env/biopython
 PATH="$OUT_DIR:\$PATH"
@@ -153,7 +172,6 @@ PYTHONPATH="$OUT_DIR:$PYTHONPATH"
    cd $OUT_DIR
 
 }
-
 
 function check_env() {
    if [ -z "$SEQ_PRISMS_BIN" ]; then

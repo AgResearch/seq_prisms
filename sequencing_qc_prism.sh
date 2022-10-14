@@ -13,22 +13,27 @@ function get_opts() {
    HPC_TYPE=slurm
    FILES=""
    OUT_ROOT=""
+   IN_ROOT=""
    FORCE=no
    ANALYSIS=all
    MINIMUM_SAMPLE_SIZE="0"
    SAMPLE_RATE=""
-   BCL2FASTQOPTS=""
+   BCLCONVERTOPTS=""
+   DEDUPEOPTS="dedupe optical dupedist=15000 subs=0"
+   THREADS=8
+   MYTEMP=/tmp
 
    help_text="
 usage :
-./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a bcl2fastq|seq_stats|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|annotation|all] [-s sample rate] -O outdir [file [.. file]] 
+./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a dedupe|bclconvert|seq_stats|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|annotation|all] [-s sample rate] -O outdir [file [.. file]] 
 examples:
-sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bcl2fastq/*.fastq.gz 
-sequencing_qc_prism.sh -n -a bcl2fastq -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -n -a bcl2fastq -B "--ignore-missing-bcls"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX/bcl2fastq/*.fastq.gz
+sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bclconvert/*.fastq.gz 
+sequencing_qc_prism.sh -n -a bclconvert -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -n -a bclconvert -B "--no-lane-splitting true"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -a bclconvert -I /dataset/hiseq/scratch/220407_A01439_0064_BHY3WWDRXY -B "" -O /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet.csv  > /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/bclconvert.log 2>&1
+sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX/bclconvert/*.fastq.gz
 "
-   while getopts ":nhfO:C:r:a:s:M:B:" opt; do
+   while getopts ":nhfO:I:C:r:a:s:j:M:B:D:T:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -43,11 +48,20 @@ sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_pro
          echo -e "$help_text"
          exit 0
          ;;
+       j)
+         THREADS=$OPTARG
+         ;;
        s)
          SAMPLE_RATE=$OPTARG
          ;;
        B)
-         BCL2FASTQOPTS=$OPTARG
+         BCLCONVERTOPTS=$OPTARG
+         ;;
+       D)
+         DEDUPEOPTS=$OPTARG
+         ;;
+       T)
+         MYTEMP=$OPTARG
          ;;
        M)
          MINIMUM_SAMPLE_SIZE=$OPTARG
@@ -60,6 +74,9 @@ sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_pro
          ;;
        O)
          OUT_ROOT=$OPTARG
+         ;;
+       I)
+         IN_ROOT=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -99,19 +116,29 @@ function check_opts() {
       exit 1
    fi
 
+   if [ ! -d $IN_ROOT ]; then
+      echo "out_dir $IN_ROOT not found"
+      exit 1
+   fi
+
+   if [ ! -d $MYTEMP ]; then
+      echo "custom temp folder $MYTEMP not found"
+      exit 1
+   fi
+
    if [[ $HPC_TYPE != "local" && $HPC_TYPE != "slurm" ]]; then
       echo "HPC_TYPE must be one of local, slurm"
       exit 1
    fi
 
-   if [[ ( $ANALYSIS != "all" ) && ( $ANALYSIS != "bcl2fastq" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "seq_stats" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "annotation" ) && ( $ANALYSIS != "kmer_analysis" ) ) ]] ; then
-      echo "analysis must be one of bcl2fastq,fasta_sample,fastq_sample,seq_stats,fastqc,mapping_analysis,kmer_analysis,blast_analysis,annotation,all ) "
+   if [[ ( $ANALYSIS != "all" )  && ( $ANALYSIS != "dedupe" ) && ( $ANALYSIS != "bclconvert" ) && ( $ANALYSIS != "fasta_sample" ) && ( $ANALYSIS != "fastq_sample" ) && ( $ANALYSIS != "seq_stats" ) && ( $ANALYSIS != "fastqc" ) && ( $ANALYSIS != "mapping_analysis" ) && ( $ANALYSIS != "blast_analysis" && ( $ANALYSIS != "annotation" ) && ( $ANALYSIS != "kmer_analysis" ) ) ]] ; then
+      echo "analysis must be one of bclconvert,dedupe,fasta_sample,fastq_sample,seq_stats,fastqc,mapping_analysis,kmer_analysis,blast_analysis,annotation,all ) "
       exit 1
    fi
 
-   if [ $ANALYSIS == "bcl2fastq" ]; then
+   if [ $ANALYSIS == "bclconvert" ]; then
       if [ $NUM_FILES != 1 ]; then
-         echo "for bcl2fastq analysis , supply the path to the sample sheet as argument"
+         echo "for bclconvert analysis , supply the path to the sample sheet as argument"
          exit 1
       fi
    fi
@@ -119,6 +146,7 @@ function check_opts() {
 }
 
 function echo_opts() {
+  echo IN_ROOT=$IN_ROOT
   echo OUT_ROOT=$OUT_ROOT
   echo DRY_RUN=$DRY_RUN
   echo DEBUG=$DEBUG
@@ -128,6 +156,9 @@ function echo_opts() {
   echo ANALYSIS=$ANALYSIS
   echo SAMPLE_RATE=$SAMPLE_RATE
   echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
+  echo BCLCONVERTOPTS=$BCLCONVERTOPTS
+  echo DEDUPEOPTS=$DEDUPEOPTS
+  echo MYTEMP=$MYTEMP
 }
 
 
@@ -163,7 +194,7 @@ function check_env() {
 
 
 function get_targets() {
-   # for each file (or the run , if bcl2fastq) make a target moniker  and write associated
+   # for each file (or the run , if bclconvert) make a target moniker  and write associated
    # wrapper, which will be called by make
 
    rm -f $OUT_ROOT/*_targets.txt
@@ -311,8 +342,8 @@ fi
       file_moniker=$base
 
 
-      #for analysis_type in bcl2fastq all fastqc fastq_sample kmer_analysis blast_analysis fasta_sample annotation fastqc mapping_analysis ; do
-      for analysis_type in bcl2fastq fastqc ; do
+      #for analysis_type in bclconvert all fastqc fastq_sample kmer_analysis blast_analysis fasta_sample annotation fastqc mapping_analysis ; do
+      for analysis_type in bclconvert fastqc dedupe; do
          echo $OUT_ROOT/$file_moniker.$analysis_type  >> $OUT_ROOT/${analysis_type}_targets.txt
          script=$OUT_ROOT/${file_moniker}.${analysis_type}.sh
          if [ -f $script ]; then
@@ -322,34 +353,37 @@ fi
             fi
          fi
 
-         # bcl2fastq is special , we only generate a single target
-         if [ $ANALYSIS == "bcl2fastq" ]; then
+         # bclconvert is special , we only generate a single target
+         if [ $ANALYSIS == "bclconvert" ]; then
             break
          fi
       done
 
-      ############### bcl2fastq script
-      if [ $ANALYSIS == "bcl2fastq" ]; then 
+      ############### bclconvert script
+      if [ $ANALYSIS == "bclconvert" ]; then 
 # example : 
-#/usr/local/bin/bcl2fastq -p 8  --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls --auto-set-to-zero-barcode-mismatches --find-adapters-with-sliding-window --adapter-stringency 0.9 --mask-short-adapter-reads 35 --minimum-trimmed-read-length 35 -R /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX --sample-sheet /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv -o /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed_in_progress/bcl2fastq_in_progress -i /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/Data/Intensities/BaseCalls
+#bcl-convert --output-directory $OUT_ROOT/bclconvert --bcl-input-directory /dataset/hiseq/scratch/$RUN --sample-sheet /dataset/hiseq/scratch/$RUN/SampleSheet.csv
+# where 
+# OUT_ROOT=/dataset/hiseq/scratch/postprocessing/illumina/novaseq/$RUN/SampleSheet
 
-         # for bcl2fastq, file is the sample sheet
-         run_dir=`dirname $file`
-         in_dir=$run_dir/Data/Intensities/BaseCalls
+         # for bclconvert, file is the sample sheet
          echo "#!/bin/bash
 export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
-mkdir -p bcl2fastq
-# run bcl2fastq
-/usr/local/bin/bcl2fastq -p 8 $BCL2FASTQOPTS  --ignore-missing-filter --ignore-missing-positions --ignore-missing-controls --auto-set-to-zero-barcode-mismatches --find-adapters-with-sliding-window --adapter-stringency 0.9 --mask-short-adapter-reads 35 --minimum-trimmed-read-length 35 --sample-sheet $file  -o $OUT_ROOT/bcl2fastq   > $OUT_ROOT/bcl2fastq/bcl2fastq.log 2>&1
+# run bcl-convert
+# report version 
+echo \"bcl-convert version in use:\"
+bcl-convert -V 
+#
+bcl-convert $BCLCONVERTOPTS --output-directory $OUT_ROOT/bclconvert --bcl-input-directory $IN_ROOT  --sample-sheet $file > $OUT_ROOT/bcl-convert.log 2>&1
 if [ \$? != 0 ]; then
-   echo \"bcl2fastq  of $file returned an error code\"
+   echo \"bclconvert  of $file returned an error code\"
    exit 1
 fi
-         " > $OUT_ROOT/${file_moniker}.bcl2fastq.sh
-         chmod +x $OUT_ROOT/${file_moniker}.bcl2fastq.sh
+         " > $OUT_ROOT/${file_moniker}.bclconvert.sh
+         chmod +x $OUT_ROOT/${file_moniker}.bclconvert.sh
 
-         # bcl2fastq is special , we only generate a single target
+         # bclconvert is special , we only generate a single target
          return
       fi
 
@@ -367,6 +401,32 @@ if [ \$? != 0 ]; then
 fi
       " > $OUT_ROOT/${file_moniker}.fastqc.sh
       chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
+
+      ############### dedupe script
+      echo "#!/bin/bash
+export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
+cd $OUT_ROOT
+mkdir -p dedupe
+echo "conda activate $SEQ_PRISMS_BIN/conda/bbmap" > $OUT_ROOT/dedupe/env_include.src
+cp $SEQ_PRISMS_BIN/etc/dedup_slurm_array_job $OUT_ROOT/dedupe
+cat >$OUT_ROOT/dedupe/tardis.toml <<EOF
+max_tasks=50
+jobtemplatefile = \"$OUT_ROOT/dedupe/dedup_slurm_array_job\"
+EOF
+
+# run dedupe
+cd dedupe
+base=`basename $file`
+mytmpdir=\`mktemp -d --tmpdir=$MYTEMP  clumpifyXXXXX\`
+tardis  --hpctype $HPC_TYPE --shell-include-file $OUT_ROOT/dedupe/env_include.src clumpify.sh $DEDUPEOPTS tmpdir=\$mytmpdir in=$file out=$OUT_ROOT/dedupe/$base  2>${OUT_ROOT}/dedupe/${base}.stderr 1>${OUT_ROOT}/dedupe/${base}.stdout  
+if [ \$? != 0 ]; then
+   echo \"dedupe of $file returned an error code\"
+   exit 1
+fi
+      " > $OUT_ROOT/${file_moniker}.dedupe.sh
+      chmod +x $OUT_ROOT/${file_moniker}.dedupe.sh
+
+
    done
 }
 
@@ -381,7 +441,7 @@ function fake_prism() {
 function run_prism() {
    cd $OUT_ROOT
 
-   make -f sequencing_qc_prism.mk -d -k  --no-builtin-rules -j 8 `cat $OUT_ROOT/${ANALYSIS}_targets.txt` > $OUT_ROOT/${ANALYSIS}.log 2>&1
+   make -f sequencing_qc_prism.mk -d -k  --no-builtin-rules -j $THREADS `cat $OUT_ROOT/${ANALYSIS}_targets.txt` > $OUT_ROOT/${ANALYSIS}.log 2>&1
 
    # run summaries
 }

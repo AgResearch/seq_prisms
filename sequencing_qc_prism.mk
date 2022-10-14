@@ -37,7 +37,11 @@
 	$@.sh > $@.mk.log 2>&1
 	date > $@
 
-%.bcl2fastq:  
+%.dedupe:
+	$@.sh > $@.mk.log 2>&1
+	date > $@
+
+%.bclconvert:  
 	$@.sh > $@.mk.log 2>&1
 	date > $@
 
