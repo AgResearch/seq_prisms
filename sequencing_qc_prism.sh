@@ -366,7 +366,7 @@ fi
 # where 
 # OUT_ROOT=/dataset/hiseq/scratch/postprocessing/illumina/novaseq/$RUN/SampleSheet
 
-         # for bclconvert, file is the sample sheet
+         # for bclconvert, "file" is the sample sheet
          echo "#!/bin/bash
 export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
@@ -394,11 +394,23 @@ export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p fastqc
 # run fastqc
-tardis --hpctype $HPC_TYPE fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>$OUT_ROOT/fastqc/fastqc.log 2>&1
+base=\`basename $file .gz\`
+base=\`basename \$base .fastq\`
+logname=$OUT_ROOT/fastqc/\${base}.log
+tardis --hpctype $HPC_TYPE fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>\$logname 2>&1
 if [ \$? != 0 ]; then
    echo \"fastqc  of $file returned an error code\"
    exit 1
 fi
+#unfortunately fastqc tends not to exit with an error code even when it didn't work - e.g. if the fastq file is malformed (e.g. it was incomplete due to upstream running out of disk quota)
+#so need to explicitly check for one of the expected output files
+#for example $OUT_ROOT/P726_3_S2_L001_R1_001.fastq.gz.fastqc.sh should yield $OUT_ROOT/fastqc/P726_3_S2_L001_R1_001_fastqc.html
+#
+success_landmark=$OUT_ROOT/fastqc/\${base}_fastqc.html
+if [ ! -f \$success_landmark ]; then
+   echo \"fastqc  of $file did not generate the expected output file \$success_landmark \"
+   exit 1
+fi 
       " > $OUT_ROOT/${file_moniker}.fastqc.sh
       chmod +x $OUT_ROOT/${file_moniker}.fastqc.sh
 
@@ -435,6 +447,7 @@ function fake_prism() {
    echo "dry run ! 
 
    "
+   make -n -f sequencing_qc_prism.mk -d -k  --no-builtin-rules -j $THREADS `cat $OUT_ROOT/${ANALYSIS}_targets.txt` > $OUT_ROOT/${ANALYSIS}.log 2>&1
    exit 0
 }
 
@@ -471,7 +484,7 @@ function main() {
          html_prism
          clean
       else
-         echo "error state from sample run - skipping html page generation and clean-up"
+         echo "error state from run of $ANALYSIS - skipping html page generation and clean-up"
          exit 1
       fi
    fi
