@@ -19,6 +19,7 @@ function get_opts() {
    MINIMUM_SAMPLE_SIZE="0"
    SAMPLE_RATE=""
    BCLCONVERTOPTS=""
+   SAMP_SHEET2FASTQ_NAMEOPTS=""
    DEDUPEOPTS="dedupe optical dupedist=15000 subs=0"
    THREADS=8
    MYTEMP=/tmp
@@ -29,11 +30,12 @@ usage :
 examples:
 sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bclconvert/*.fastq.gz 
 sequencing_qc_prism.sh -n -a bclconvert -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -n -a bclconvert -B "--no-lane-splitting true"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -a bclconvert -I /dataset/hiseq/scratch/220407_A01439_0064_BHY3WWDRXY -B "" -O /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet.csv  > /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/bclconvert.log 2>&1
+sequencing_qc_prism.sh -n -a bclconvert -B \"--no-lane-splitting true\"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -n -a bclconvert -B \"--no-lane-splitting true\" -Q \"-I 1,2 -t single_end\"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -a bclconvert -I /dataset/hiseq/scratch/220407_A01439_0064_BHY3WWDRXY -B \"\" -O /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet.csv  > /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/bclconvert.log 2>&1
 sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX/bclconvert/*.fastq.gz
 "
-   while getopts ":nhfO:I:C:r:a:s:j:M:B:D:T:" opt; do
+   while getopts ":nhfO:I:C:r:a:s:j:M:B:D:T:Q:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -56,6 +58,9 @@ sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_pro
          ;;
        B)
          BCLCONVERTOPTS=$OPTARG
+         ;;
+       Q)
+         SAMP_SHEET2FASTQ_NAMEOPTS=$OPTARG
          ;;
        D)
          DEDUPEOPTS=$OPTARG
@@ -157,6 +162,7 @@ function echo_opts() {
   echo SAMPLE_RATE=$SAMPLE_RATE
   echo MINIMUM_SAMPLE_SIZE=$MINIMUM_SAMPLE_SIZE
   echo BCLCONVERTOPTS=$BCLCONVERTOPTS
+  echo SAMP_SHEET2FASTQ_NAMEOPTS=$SAMP_SHEET2FASTQ_NAMEOPTS
   echo DEDUPEOPTS=$DEDUPEOPTS
   echo MYTEMP=$MYTEMP
 }
@@ -178,6 +184,7 @@ function configure_env() {
    cp align_prism.mk $OUT_ROOT
    cp kmer_prism.sh $OUT_ROOT
    cp kmer_prism.mk $OUT_ROOT
+   cp samplesheet_to_fastqname.py $OUT_ROOT
    echo "
 max_tasks=50
 " > $OUT_ROOT/tardis.toml
@@ -378,6 +385,12 @@ bcl-convert -V
 bcl-convert $BCLCONVERTOPTS --output-directory $OUT_ROOT/bclconvert --bcl-input-directory $IN_ROOT  --sample-sheet $file > $OUT_ROOT/bcl-convert.log 2>&1
 if [ \$? != 0 ]; then
    echo \"bclconvert  of $file returned an error code\"
+   exit 1
+fi
+# compare sequence files generated and expected 
+./samplesheet_to_fastqname.py -x $SAMP_SHEET2FASTQ_NAMEOPTS -d $OUT_ROOT/bclconvert $file > $OUT_ROOT/samplesheet_to_fastqname.log 2>&1
+if [ \$? != 0 ]; then
+   echo \"bclconvert of $file : error - sequence files generated do not match expected - check $OUT_ROOT/samplesheet_to_fastqname.log\"
    exit 1
 fi
          " > $OUT_ROOT/${file_moniker}.bclconvert.sh
