@@ -32,12 +32,55 @@ python samplesheet_to_fastqname.py -I 1,2 -t single_end -d /bifo/scratch/hiseq/p
     parser.add_argument('-d', '--fastq_folder' , dest='fastq_folder', required=False, default=None , type=str, help="optional folder containing files to compare with expected")
     parser.add_argument('-x','--exit_with_error', dest='exit_with_error', action='store_const', default = False, const=True, help='if set, exit with an error code if any differences between expected and actual files')
     parser.add_argument('-t', '--sequencing_type' , dest='sequencing_type', required=False, default="paired_end" , type=str, choices=["paired_end", "single_end"], help="generate paired / single end names")
-    parser.add_argument('-I', '--impute_lanes' , dest='impute_lanes', required=False, default=None , type=str,help="a comma-separated list of lanes to impute")    
-
-    
+    parser.add_argument('-I', '--impute_lanes' , dest='impute_lanes', required=False, default=None , type=str,help="a comma-separated list of lanes to impute")
+    parser.add_argument('-i', '--run_info_file' , dest='run_info_file', required=False, default=None , type=str,help="name of the runinfo file")
     
     args = vars(parser.parse_args())
 
+    # if we are given a runinfo file, try to get sequencing type and impute_lanes
+    # example : 
+    #<?xml version="1.0" encoding="utf-8"?>
+    #<RunInfo Version="5">
+    #    <Run Id="230317_A01439_0157_BH2T3JDSX7" Number="157">
+    #            <Flowcell>H2T3JDSX7</Flowcell>
+    #            <Instrument>A01439</Instrument>
+    #            <Date>17-Mar-23 14:47:45</Date>
+    #            <Reads>
+    #                    <Read Number="1" NumCycles="151" IsIndexedRead="N"/>
+    #                    <Read Number="2" NumCycles="8" IsIndexedRead="Y"/>
+    #                    <Read Number="3" NumCycles="8" IsIndexedRead="Y"/>
+    #                    <Read Number="4" NumCycles="151" IsIndexedRead="N"/>
+    #            </Reads>
+    #            <FlowcellLayout LaneCount="4" SurfaceCount="2" SwathCount="6" TileCount="78" FlowcellSide="2">
+    #                    <TileSet TileNamingConvention="FourDigit">
+    #                            <Tiles>
+    if args["run_info_file"] is not None:
+        if not os.path.isfile( args["run_info_file"] ) :
+            raise Exception("%(run_info_file)s does not exist"%args)
+
+        non_indexed_reads=0
+        lane_count=1
+        print("checking %(run_info_file)s"%args)
+        with open( args["run_info_file"], "r") as run_info:
+            for record in run_info:
+                m=re.search('IsIndexedRead="N"', record)
+                if m is not None: 
+                    non_indexed_reads +=1
+                    continue
+                m=re.search('LaneCount="(\d)"', record)
+                if m is not None:
+                    lane_count = int(m.groups()[0])
+                    args["impute_lanes"] = ",".join(str(item) for item in range(1,1+lane_count))
+                    continue
+
+        if non_indexed_reads > 0:
+            if non_indexed_reads == 2:
+                args["sequencing_type"] = "paired_end"
+            elif non_indexed_reads == 1:
+                args["sequencing_type"] = "single_end"
+                
+
+        print("non_indexed_reads=%d ,lane_count=%d"%(non_indexed_reads, lane_count))
     
     return args
 
@@ -52,6 +95,7 @@ def get_fastq_filenames(options):
         header=None
         sample_dict = {}
         predicted_files = set()
+        found_lane_col = False
         for record in input_file:
             #[Data],,,,,,,,,,,
             #Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,Index_Plate_Well,I7_Index_ID,index,I5_Index_ID,index2,Sample_Project,Description
@@ -75,6 +119,7 @@ def get_fastq_filenames(options):
                 if "lane" in header_fields:
                     (ilane,isample) = (header_fields.index("lane"), header_fields.index("sample_id"))
                     (lane,sample) = (int(fields[ilane]), fields[isample])
+                    found_lane_col = True
                 else:
                     isample = header_fields.index("sample_id")
                     (lane,sample) = (1, fields[isample])   # default lane to 1
@@ -113,6 +158,7 @@ def main():
 
     predicted_files = get_fastq_filenames(options)
 
+    print( "the following files were expected from the sample sheet in %s"%options["fastq_folder"])
     for name in predicted_files:
         print(name)
 
