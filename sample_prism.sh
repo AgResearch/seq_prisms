@@ -26,8 +26,8 @@ function get_opts() {
 example:\n
 sample_prism.sh -n  -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
 sample_prism.sh -n  -O /dataset/Tash_FL1_Ryegrass/ztmp/seq_qc/test/fastqc  /dataset/Tash_FL1_Ryegrass/ztmp/For_Alan/*.fastq.gz\n
-sample_prism.sh -n  -s .00001 -M 10000 -a tag_count -O /dataset/hiseq/scratch/postprocessing/gbs/weevils_tassel3/fasta  /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt\n
-sample_prism.sh -n  -t 2  -a tag_count_unique -O /dataset/hiseq/scratch/postprocessing/gbs/weevils_tassel3/fasta  /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt\n
+sample_prism.sh -n  -s .00001 -M 10000 -a tag_count -O /dataset/2023_illumina_sequencing_a/scratch/postprocessing/gbs/weevils_tassel3/fasta  /dataset/2023_illumina_sequencing_a/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt\n
+sample_prism.sh -n  -t 2  -a tag_count_unique -O /dataset/2023_illumina_sequencing_a/scratch/postprocessing/gbs/weevils_tassel3/fasta  /dataset/2023_illumina_sequencing_a/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt\n
 \n
 "
 

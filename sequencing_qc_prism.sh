@@ -23,19 +23,20 @@ function get_opts() {
    DEDUPEOPTS="dedupe optical dupedist=15000 subs=0"
    THREADS=8
    MYTEMP=/tmp
+   run_info_file=""
 
    help_text="
 usage :
 ./sequencing_qc_prism.sh  [-h] [-n] [-d] [-f] [-C hpctype] [-a dedupe|bclconvert|seq_stats|fasta_sample|fastq_sample|fastqc|mapping_analysis|kmer_analysis|blast_analysis|annotation|all] [-s sample rate] -O outdir [file [.. file]] 
 examples:
-sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bclconvert/*.fastq.gz 
-sequencing_qc_prism.sh -n -a bclconvert -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -n -a bclconvert -B \"--no-lane-splitting true\"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -n -a bclconvert -B \"--no-lane-splitting true\" -Q \"-I 1,2 -t single_end\"  -O /dataset/gseq_processing/scratch/illumina/hiseq/180824_D00390_0394_BCCPYFANXX /dataset/hiseq/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
-sequencing_qc_prism.sh -a bclconvert -I /dataset/hiseq/scratch/220407_A01439_0064_BHY3WWDRXY -B \"\" -O /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet.csv  > /dataset/hiseq/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/bclconvert.log 2>&1
-sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/hiseq/180908_D00390_0397_BCCRAJANXX/bclconvert/*.fastq.gz
+sequencing_qc_prism.sh -n -a fastqc -O /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180824_D00390_0394_BCCPYFANXX /dataset/2023_illumina_sequencing_a/scratch/postprocessing/180824_D00390_0394_BCCPYFANXX.processed/bclconvert/*.fastq.gz 
+sequencing_qc_prism.sh -n -a bclconvert -O /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180824_D00390_0394_BCCPYFANXX /dataset/2023_illumina_sequencing_a/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -n -a bclconvert -B \"--no-lane-splitting true\"  -O /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180824_D00390_0394_BCCPYFANXX /dataset/2023_illumina_sequencing_a/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -n -a bclconvert -B \"--no-lane-splitting true\" -Q \"-I 1,2 -t single_end\"  -O /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180824_D00390_0394_BCCPYFANXX /dataset/2023_illumina_sequencing_a/active/180824_D00390_0394_BCCPYFANXX/SampleSheet.csv
+sequencing_qc_prism.sh -a bclconvert -I /dataset/2023_illumina_sequencing_a/scratch/220407_A01439_0064_BHY3WWDRXY -B \"\" -O /dataset/2023_illumina_sequencing_a/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet /dataset/2023_illumina_sequencing_a/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet.csv  > /dataset/2023_illumina_sequencing_a/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/bclconvert.log 2>&1
+sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180908_D00390_0397_BCCRAJANXX/bclconvert/*.fastq.gz
 "
-   while getopts ":nhfO:I:C:r:a:s:j:M:B:D:T:Q:" opt; do
+   while getopts ":nhfO:I:C:r:a:s:j:M:B:D:T:Q:i:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -82,6 +83,9 @@ sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_pro
          ;;
        I)
          IN_ROOT=$OPTARG
+         ;;
+       i)
+         run_info_file=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -148,6 +152,14 @@ function check_opts() {
       fi
    fi
 
+   if [ ! -z "$run_info_file" ]; then
+      if [ ! -f $run_info_file ]; then
+         echo "run info file $run_info_file does not exist"
+         exit 1
+      fi
+   fi
+
+
 }
 
 function echo_opts() {
@@ -209,7 +221,7 @@ function get_targets() {
 
 
    sample_phrase=""
-   if [ ! -z $SAMPLE_RATE ]; then
+   if [ ! -z "$SAMPLE_RATE" ]; then
       sample_phrase="-s $SAMPLE_RATE"
       if [ $MINIMUM_SAMPLE_SIZE != "0" ]; then
          sample_phrase="-s $SAMPLE_RATE -M $MINIMUM_SAMPLE_SIZE"
@@ -369,11 +381,15 @@ fi
       ############### bclconvert script
       if [ $ANALYSIS == "bclconvert" ]; then 
 # example : 
-#bcl-convert --output-directory $OUT_ROOT/bclconvert --bcl-input-directory /dataset/hiseq/scratch/$RUN --sample-sheet /dataset/hiseq/scratch/$RUN/SampleSheet.csv
+#bcl-convert --output-directory $OUT_ROOT/bclconvert --bcl-input-directory /dataset/2023_illumina_sequencing_a/scratch/$RUN --sample-sheet /dataset/2023_illumina_sequencing_a/scratch/$RUN/SampleSheet.csv
 # where 
-# OUT_ROOT=/dataset/hiseq/scratch/postprocessing/illumina/novaseq/$RUN/SampleSheet
+# OUT_ROOT=/dataset/2023_illumina_sequencing_a/scratch/postprocessing/illumina/novaseq/$RUN/SampleSheet
 
          # for bclconvert, "file" is the sample sheet
+         run_info_phrase=""
+         if [ ! -z "$run_info_file" ]; then
+            run_info_phrase="-i $run_info_file"
+         fi
          echo "#!/bin/bash
 export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
@@ -388,7 +404,7 @@ if [ \$? != 0 ]; then
    exit 1
 fi
 # compare sequence files generated and expected 
-./samplesheet_to_fastqname.py -x $SAMP_SHEET2FASTQ_NAMEOPTS -d $OUT_ROOT/bclconvert $file > $OUT_ROOT/samplesheet_to_fastqname.log 2>&1
+./samplesheet_to_fastqname.py $run_info_phrase -x $SAMP_SHEET2FASTQ_NAMEOPTS -d $OUT_ROOT/bclconvert $file > $OUT_ROOT/samplesheet_to_fastqname.log 2>&1
 if [ \$? != 0 ]; then
    echo \"bclconvert of $file : error - sequence files generated do not match expected - check $OUT_ROOT/samplesheet_to_fastqname.log\"
    exit 1
