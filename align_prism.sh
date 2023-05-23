@@ -425,41 +425,46 @@ function get_targets() {
             tardis_include_phrase="--shell-include-file $tardis_environment_include " 
          fi
 
+         tardis_dry_run_phrase=""
+         if [ $DRY_RUN == "yes" ]; then
+            tardis_dry_run_phrase="--dry-run"
+         fi
+
          if [ $ALIGNER == bwa ]; then
             echo "#!/bin/bash
 rm -f $OUT_DIR/${alignment_moniker}.bam
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase bwa aln $parameters $reference _condition_fastq_input_$file \> _condition_throughput_$OUT_DIR/${alignment_moniker}.sai \; bwa samse $reference _condition_throughput_$OUT_DIR/${alignment_moniker}.sai _condition_fastq_input_$file  \> _condition_sam_output_$OUT_DIR/${alignment_moniker}.bam  
-tardis --hpctype $HPC_TYPE -q -d $OUT_DIR $tardis_include_phrase samtools flagstat $OUT_DIR/${alignment_moniker}.bam   > $OUT_DIR/${alignment_moniker}.stats 
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase bwa aln $parameters $reference _condition_fastq_input_$file \> _condition_throughput_$OUT_DIR/${alignment_moniker}.sai \; bwa samse $reference _condition_throughput_$OUT_DIR/${alignment_moniker}.sai _condition_fastq_input_$file  \> _condition_sam_output_$OUT_DIR/${alignment_moniker}.bam  
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -q -d $OUT_DIR $tardis_include_phrase samtools flagstat $OUT_DIR/${alignment_moniker}.bam   > $OUT_DIR/${alignment_moniker}.stats 
             " > $aligner_filename
          elif [ $ALIGNER == blastn ]; then
             echo "#!/bin/bash
 rm -f $OUT_DIR/${alignment_moniker}.results.gz
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastn -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastn -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
             " > $aligner_filename
          elif [ $ALIGNER == tblastx ]; then
             echo "#!/bin/bash
 rm -f $OUT_DIR/${alignment_moniker}.results.gz
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase tblastx -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase tblastx -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
             " > $aligner_filename
          elif [ $ALIGNER == blastx ]; then
             echo "#!/bin/bash
 rm -f $OUT_DIR/${alignment_moniker}.results.gz
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastx -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastx -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
             " > $aligner_filename
          elif [ $ALIGNER == blastp ]; then
             echo "#!/bin/bash
 rm -f $OUT_DIR/${alignment_moniker}.results.gz
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastp -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastp -db $reference -query  _condition_fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
             " > $aligner_filename
          elif [ $ALIGNER == qblastn ]; then
             echo "#!/bin/bash
 rm -f $OUT_DIR/${alignment_moniker}.results.gz
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastn -db $reference -query  _condition_fastq2fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastn -db $reference -query  _condition_fastq2fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results   
             " > $aligner_filename
          elif [ $ALIGNER == qblastx ]; then
             echo "#!/bin/bash
 rm -f $OUT_DIR/${alignment_moniker}.results.gz
-tardis --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastx -db $reference -query  _condition_fastq2fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
+tardis $tardis_dry_run_phrase --hpctype $HPC_TYPE -d  $OUT_DIR  $sample_phrase $tardis_include_phrase blastx -db $reference -query  _condition_fastq2fasta_input_$file $parameters \> _condition_text_output_$OUT_DIR/${alignment_moniker}.results
             " > $aligner_filename
          else 
             echo "unsupported aligner $ALIGNER "
