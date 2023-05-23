@@ -8,7 +8,7 @@ get_command_args <- function() {
    args=(commandArgs(TRUE))
    if(length(args)!=1 ){
       #quit with error message if wrong number of args supplied
-      print('Usage example : Rscript --vanilla  mapping_stats_plots.r datafolder=/dataset/hiseq/scratch/postprocessing/170207_D00390_0282_ACA7WHANXX.processed/mapping_preview')
+      print('Usage example : Rscript --vanilla  mapping_stats_plots.r datafolder=/dataset/2023_illumina_sequencing_a/scratch/postprocessing/170207_D00390_0282_ACA7WHANXX.processed/mapping_preview')
       print('args received were : ')
       for (e in args) {
          print(e)

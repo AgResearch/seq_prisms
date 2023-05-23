@@ -189,7 +189,7 @@ def get_options():
 
 example :
 
-./taxonomy_prism.py  /dataset/hiseq/scratch/postprocessing/Salmon_mixed_runs.processed_in_progress/taxonomy_in_progress/Project_Salmon_HalfVol_ApeKI_Sample_SQ0031.list.nt_blastresults.txt.gz
+./taxonomy_prism.py  /dataset/2023_illumina_sequencing_a/scratch/postprocessing/Salmon_mixed_runs.processed_in_progress/taxonomy_in_progress/Project_Salmon_HalfVol_ApeKI_Sample_SQ0031.list.nt_blastresults.txt.gz
 ./taxonomy_prism.py  --column_numbers 0,7,6 --summary_type dump_top_hits /dataset/gseq_processing/scratch/gbs/181005_D00390_0407_BCCV91ANXX/SQ0807.all.PstI.PstI/annotation/qc314325-1_CCV91ANXX_4_807_X4.cnt.tag_count_unique.s.05m2T10_taggt2.fasta.blastn.nt.evalue1.0e10dust20641outfmt7qseqidsseqidpidentevaluestaxidssscinamesscomnamessskingdomsstitle.results
 ./taxonomy_prism.py   --summary_type dump_top_hits --top_hit_selection_method best /dataset/gseq_processing/scratch/gbs/181005_D00390_0407_BCCV91ANXX/SQ0807.all.PstI.PstI/annotation/qc314325-1_CCV91ANXX_4_807_X4.cnt.tag_count_unique.s.05m2T10_taggt2.fasta.blastn.nt.evalue1.0e10dust20641outfmt7qseqidsseqidpidentevaluestaxidssscinamesscomnamessskingdomsstitle.results
 ./taxonomy_prism.py  --column_numbers 0,3,7,6  --summary_type dump_top_hits --top_hit_selection_method best /dataset/gseq_processing/scratch/gbs/181005_D00390_0407_BCCV91ANXX/SQ0807.all.PstI.PstI/annotation/qc314325-1_CCV91ANXX_4_807_X4.cnt.tag_count_unique.s.05m2T10_taggt2.fasta.blastn.nt.evalue1.0e10dust20641outfmt7qseqidsseqidpidentevaluestaxidssscinamesscomnamessskingdomsstitle.results

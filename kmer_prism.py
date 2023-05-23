@@ -566,7 +566,7 @@ kmer_prism.py -t entropy -k 6 -p 20 -s .001 /data/project2/*.fastq.gz
 kmer_prism.py -t entropy -k 6 -p 20  /data/project2/*.fastq.gz /references/ref1.fa /references/ref2.fa
 
 # obtain a text file containing self-information and ranks for 6-mers in a tag count file
-./kmer_prism.py -t zipfian -k 6 -p 1 -o tag_zipfian.txt -x /dataset/hiseq/active/bin/hiseq_pipeline/cat_tag_count.sh /dataset/hiseq/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt
+./kmer_prism.py -t zipfian -k 6 -p 1 -o tag_zipfian.txt -x /dataset/2023_illumina_sequencing_a/active/bin/hiseq_pipeline/cat_tag_count.sh /dataset/2023_illumina_sequencing_a/scratch/postprocessing/151016_D00390_0236_AC6JURANXX.gbs/SQ0124.processed_sample/uneak/tagCounts/G88687_C6JURANXX_1_124_X4.cnt
 
 # as above but feeed in tag count data from a text file, use "cat" to list it (but need .cnt suffix so
 # program expects the stream to contain tag counts

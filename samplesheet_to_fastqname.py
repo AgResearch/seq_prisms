@@ -17,13 +17,13 @@ def get_options():
 examples :
 
 # list expected filenames 
-python samplesheet_to_fastqname.py /dataset/hiseq/scratch/221007_A01439_0124_BHW2C2DSX3/HW2C2DSX3.csv
+python samplesheet_to_fastqname.py /dataset/2023_illumina_sequencing_a/scratch/221007_A01439_0124_BHW2C2DSX3/HW2C2DSX3.csv
 
 # list expected filenames, and compare with actual files that were generated. If any differences, list to stderr and exit with process code 1  
-python samplesheet_to_fastqname.py -x -d /bifo/scratch/hiseq/postprocessing/illumina/novaseq/221007_A01439_0124_BHW2C2DSX3/SampleSheet/bclconvert /dataset/hiseq/scratch/221007_A01439_0124_BHW2C2DSX3/HW2C2DSX3.csv
+python samplesheet_to_fastqname.py -x -d /bifo/scratch/2023_illumina_sequencing_a/postprocessing/illumina/novaseq/221007_A01439_0124_BHW2C2DSX3/SampleSheet/bclconvert /dataset/2023_illumina_sequencing_a/scratch/221007_A01439_0124_BHW2C2DSX3/HW2C2DSX3.csv
 
 # sample sheet does not specify lane, impute listed lanes (e.g. GBS). Also only generate single-end lanes
-python samplesheet_to_fastqname.py -I 1,2 -t single_end -d /bifo/scratch/hiseq/postprocessing/illumina/novaseq/221012_A01439_0125_AHLJGVDRX2/SampleSheet/bclconvert /bifo/scratch/hiseq/221012_A01439_0125_AHLJGVDRX2/HLJGVDRX2.csv  2>junk
+python samplesheet_to_fastqname.py -I 1,2 -t single_end -d /bifo/scratch/2023_illumina_sequencing_a/postprocessing/illumina/novaseq/221012_A01439_0125_AHLJGVDRX2/SampleSheet/bclconvert /bifo/scratch/2023_illumina_sequencing_a/221012_A01439_0125_AHLJGVDRX2/HLJGVDRX2.csv  2>junk
 
 """
 

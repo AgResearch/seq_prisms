@@ -65,7 +65,7 @@ get_command_args <- function() {
    args=(commandArgs(TRUE))
    if(length(args)!=1 ){
       #quit with error message if wrong number of args supplied
-      print('Usage example : Rscript --vanilla  kmer_plots_gbs.r datafolder=/dataset/hiseq/scratch/postprocessing/160623_D00390_0257_AC9B0MANXX.gbs/SQ2559.processed_sample/uneak/kmer_analysis')
+      print('Usage example : Rscript --vanilla  kmer_plots_gbs.r datafolder=/dataset/2023_illumina_sequencing_a/scratch/postprocessing/160623_D00390_0257_AC9B0MANXX.gbs/SQ2559.processed_sample/uneak/kmer_analysis')
       print('args received were : ')
       for (e in args) {
          print(e)
