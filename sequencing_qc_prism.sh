@@ -21,6 +21,8 @@ function get_opts() {
    BCLCONVERTOPTS=""
    SAMP_SHEET2FASTQ_NAMEOPTS=""
    DEDUPEOPTS="dedupe optical dupedist=15000 subs=0"
+   MEM_PER_CPU=8G
+   MAX_WALL_TIME=2
    THREADS=8
    MYTEMP=/tmp
    run_info_file=""
@@ -36,7 +38,7 @@ sequencing_qc_prism.sh -n -a bclconvert -B \"--no-lane-splitting true\" -Q \"-I 
 sequencing_qc_prism.sh -a bclconvert -I /dataset/2023_illumina_sequencing_a/scratch/220407_A01439_0064_BHY3WWDRXY -B \"\" -O /dataset/2023_illumina_sequencing_a/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet /dataset/2023_illumina_sequencing_a/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/SampleSheet.csv  > /dataset/2023_illumina_sequencing_a/scratch/postprocessing/illumina/novaseq/220407_A01439_0064_BHY3WWDRXY/bclconvert.log 2>&1
 sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180908_D00390_0397_BCCRAJANXX /dataset/gseq_processing/scratch/illumina/2023_illumina_sequencing_a/180908_D00390_0397_BCCRAJANXX/bclconvert/*.fastq.gz
 "
-   while getopts ":nhfO:I:C:r:a:s:j:M:B:D:T:Q:i:" opt; do
+   while getopts ":nhfO:I:C:r:a:s:j:M:B:D:T:Q:i:G:W:" opt; do
    case $opt in
        n)
          DRY_RUN=yes
@@ -86,6 +88,12 @@ sequencing_qc_prism.sh -n -a fastq_sample -s .0002 -M 10000 -O /dataset/gseq_pro
          ;;
        i)
          run_info_file=$OPTARG
+         ;;
+       G)
+         MEM_PER_CPU=$OPTARG
+         ;;
+       W)
+         MAX_WALL_TIME=$OPTARG
          ;;
        \?)
          echo "Invalid option: -$OPTARG" >&2
@@ -459,7 +467,7 @@ EOF
 cd dedupe
 base=`basename $file`
 mytmpdir=\`mktemp -d --tmpdir=$MYTEMP  clumpifyXXXXX\`
-tardis  --hpctype $HPC_TYPE --shell-include-file $OUT_ROOT/dedupe/env_include.src clumpify.sh $DEDUPEOPTS tmpdir=\$mytmpdir in=$file out=$OUT_ROOT/dedupe/$base  2>${OUT_ROOT}/dedupe/${base}.stderr 1>${OUT_ROOT}/dedupe/${base}.stdout  
+tardis  --hpctype $HPC_TYPE --shell-include-file $OUT_ROOT/dedupe/env_include.src clumpify.sh -Xmx80g $DEDUPEOPTS tmpdir=\$mytmpdir in=$file out=$OUT_ROOT/dedupe/$base  2>${OUT_ROOT}/dedupe/${base}.stderr 1>${OUT_ROOT}/dedupe/${base}.stdout  
 if [ \$? != 0 ]; then
    echo \"dedupe of $file returned an error code\"
    exit 1
