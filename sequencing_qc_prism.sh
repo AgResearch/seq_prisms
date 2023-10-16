@@ -347,7 +347,7 @@ export SEQ_PRISMS_BIN=$SEQ_PRISMS_BIN
 cd $OUT_ROOT
 mkdir -p kmer_analysis
 # run kmer analysis
-$OUT_ROOT/kmer_prism.sh -a fastq -p \"-k 6 -A\" -O $OUT_ROOT/kmer_analysis $OUT_ROOT/fastq_sample/*.fastq.gz  >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
+$OUT_ROOT/kmer_prism.sh -W $MAX_WALL_TIME -B $MEM_PER_CPU -a fastq -p \"-k 6 -A\" -O $OUT_ROOT/kmer_analysis $OUT_ROOT/fastq_sample/*.fastq.gz  >  $OUT_ROOT/kmer_analysis/kmer_analysis.log 2>&1
 # summarise common sequence 
 rm -f $OUT_ROOT/kmer_analysis/common_sequence_summary.txt
 for file in $OUT_ROOT/kmer_analysis/*.fastq.k6A.log; do  
@@ -434,6 +434,15 @@ mkdir -p fastqc
 base=\`basename $file .gz\`
 base=\`basename \$base .fastq\`
 logname=$OUT_ROOT/fastqc/\${base}.log
+
+# customise slurm array job for max wall time and mem per cpu and tell tardis to use it
+cat $SEQ_PRISMS_BIN/etc/default_slurm_array_job | sed \"s/_mem-per-cpu_/${MEM_PER_CPU}/g\" - | sed \"s/_max-wall-time_/${MAX_WALL_TIME}/g\" - > $OUT_ROOT/slurm_array_job
+cat >$OUT_ROOT/tardis.toml <<EOF
+max_tasks = 50
+jobtemplatefile = \"$OUT_ROOT/slurm_array_job\"
+EOF
+
+
 tardis --hpctype $HPC_TYPE fastqc -t 8 -o $OUT_ROOT/fastqc $file 1>\$logname 2>&1
 if [ \$? != 0 ]; then
    echo \"fastqc  of $file returned an error code\"
@@ -492,7 +501,6 @@ function run_prism() {
    cd $OUT_ROOT
 
    make -f sequencing_qc_prism.mk -d -k  --no-builtin-rules -j $THREADS `cat $OUT_ROOT/${ANALYSIS}_targets.txt` > $OUT_ROOT/${ANALYSIS}.log 2>&1
-
    # run summaries
 }
 
